@@ -5,7 +5,10 @@ import { useState, useEffect } from "react";
 import { Dropdown, DropdownMenuItemType, IDropdownOption, IDropdownStyles } from '@fluentui/react/lib/Dropdown';
 import { Stack } from "@fluentui/react";
 import { DocumentsDetailList, IDocument } from "./DocumentsDetailList";
-import { ArrowClockwise24Filled } from "@fluentui/react-icons";
+import { Delete24Regular,
+    Send24Regular,
+    ArrowClockwise24Filled
+    } from "@fluentui/react-icons";
 import { animated, useSpring } from "@react-spring/web";
 import { getAllUploadStatus, FileUploadBasicStatus, GetUploadStatusRequest, FileState, getFolders, getTags } from "../../api";
 
@@ -199,45 +202,59 @@ export const FileStatus = ({ className }: Props) => {
     return (
         <div className={styles.container}>
             <div className={`${styles.options} ${className ?? ""}`} >
-            <Dropdown
-                    label="Uploaded in last:"
-                    defaultSelectedKey='4hours'
-                    onChange={onTimeSpanChange}
-                    placeholder="Select a time range"
-                    options={dropdownTimespanOptions}
-                    styles={dropdownTimespanStyles}
-                    aria-label="timespan options for file statuses to be displayed"
+                <Dropdown
+                        label="Uploaded in last:"
+                        defaultSelectedKey='4hours'
+                        onChange={onTimeSpanChange}
+                        placeholder="Select a time range"
+                        options={dropdownTimespanOptions}
+                        styles={dropdownTimespanStyles}
+                        aria-label="timespan options for file statuses to be displayed"
+                    />
+                <Dropdown
+                        label="File State:"
+                        defaultSelectedKey={'ALL'}
+                        onChange={onFileStateChange}
+                        placeholder="Select file states"
+                        options={dropdownFileStateOptions}
+                        styles={dropdownFileStateStyles}
+                        aria-label="file state options for file statuses to be displayed"
+                    />
+                <Dropdown
+                    label="Folder:"
+                    defaultSelectedKey={'Root'}
+                    onChange={onFolderChange}
+                    placeholder="Select folder"
+                    options={folderOptions}
+                    styles={dropdownFolderStyles}
+                    aria-label="folder options for file statuses to be displayed"
                 />
-            <Dropdown
-                    label="File State:"
-                    defaultSelectedKey={'ALL'}
-                    onChange={onFileStateChange}
-                    placeholder="Select file states"
-                    options={dropdownFileStateOptions}
-                    styles={dropdownFileStateStyles}
-                    aria-label="file state options for file statuses to be displayed"
+                <Dropdown
+                    label="Tag:"
+                    defaultSelectedKey={'All'}
+                    onChange={onTagChange}
+                    placeholder="Select a tag"
+                    options={tagOptions}
+                    styles={dropdownTagStyles}
+                    aria-label="tag options for file statuses to be displayed"
                 />
-            <Dropdown
-                label="Folder:"
-                defaultSelectedKey={'Root'}
-                onChange={onFolderChange}
-                placeholder="Select folder"
-                options={folderOptions}
-                styles={dropdownFolderStyles}
-                aria-label="folder options for file statuses to be displayed"
-            />
-            <Dropdown
-                label="Tag:"
-                defaultSelectedKey={'All'}
-                onChange={onTagChange}
-                placeholder="Select a tag"
-                options={tagOptions}
-                styles={dropdownTagStyles}
-                aria-label="tag options for file statuses to be displayed"
-            />
-            <div className={styles.refresharea} onClick={onGetStatusClick} aria-label="Refresh displayed file statuses">
-                <ArrowClockwise24Filled className={styles.refreshicon} />
-                <span className={styles.refreshtext}>Refresh</span>
+                <div className={styles.refresharea} onClick={onGetStatusClick} aria-label="Refresh displayed file statuses">
+                    <ArrowClockwise24Filled className={styles.refreshicon} />
+                    <span className={styles.refreshtext}>Refresh</span>
+                </div>
+                <div className={styles.buttonsContainer}>
+                <div className={styles.refresharea} onClick={onGetStatusClick} aria-label="Refresh displayed file statuses">
+                    <ArrowClockwise24Filled className={styles.refreshicon} />
+                    <span className={styles.refreshtext}>Refresh</span>
+                </div>
+                <div className={`${styles.refresharea} ${styles.divSpacing}`} onClick={onDeleteClick} aria-label="Delete">
+                    <Delete24Regular className={styles.refreshicon} />
+                    <span className={`${styles.refreshtext} ${styles.centeredText}`}>Delete</span>
+                </div>
+                <div className={`${styles.refresharea} ${styles.divSpacing}`} onClick={onResubmitClick} aria-label="Resubmit">
+                    <Send24Regular className={styles.refreshicon} />
+                    <span className={`${styles.refreshtext} ${styles.centeredText}`}>Resubmit</span>
+                </div>
             </div>
             </div>
             {isLoading ? (
