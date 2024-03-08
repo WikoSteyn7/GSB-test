@@ -466,7 +466,6 @@ export const DocumentsDetailList = ({ items, onFilesSorted}: Props) => {
             <div>
                 <Notification message={notification.message} />
             </div>
-            
                 <Panel
                     headerText="Status Log"
                     isOpen={stateDialogVisible}
@@ -481,26 +480,6 @@ export const DocumentsDetailList = ({ items, onFilesSorted}: Props) => {
                     <StatusContent item={value} />
                     </div>
                 </Panel>
-                
-            {/* <Dialog
-                hidden={!stateDialogVisible}
-                onDismiss={() => setStateDialogVisible(false)}
-                dialogContentProps={{
-                    type: DialogType.normal,
-                    title: 'State Details',
-                    closeButtonAriaLabel: 'Close',
-                }}
-                modalProps={{
-                    styles: dialogStyles,
-                }}
-            >
-                <div className="scrollableDialogContent" ref={scrollableContentRef}>
-                    {stateDialogContent}
-                </div>
-                <DialogFooter>
-                    <PrimaryButton onClick={() => setStateDialogVisible(false)} text="OK" />
-                </DialogFooter>
-            </Dialog> */}
         </div>
     );
 }
