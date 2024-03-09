@@ -77,6 +77,7 @@
     white-space: pre-line;
 }
 
+
 .refresharea {
     display: flex;
     align-items: center; /* Vertically center the text with the icon */
@@ -89,17 +90,39 @@
     color: #606060; /* Mid-dark grey text */
   }
   
-  .divSpacing {
-    margin: 10px; /* Adjust as needed */
-  }
-  
-  .centeredText {
-    text-align: center;
-  }
-  
-  .refreshtext {
-    font-size: 0.8em; /* Smaller text size, adjust as needed */
-  }
-  
-  .refreshicon {
-    fill: #606060; /* Mid-dark grey for SVG icons */}
+.divSpacing {
+margin: 10px; /* Adjust as needed */
+}
+
+.centeredText {
+text-align: center;
+}
+
+.refreshtext {
+font-size: 0.8em; /* Smaller text size, adjust as needed */
+}
+
+.refreshicon {
+fill: #606060; /* Mid-dark grey for SVG icons */}
+
+.notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #f8d7da; /* Light red background */
+    color: #721c24; /* Dark red text */
+    padding: 15px; /* More padding for larger area */
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional: Adds shadow for better visibility */
+    width: auto; /* Auto width to accommodate longer text */
+    max-width: 80%; /* Maximum width to prevent extremely long lines */
+    overflow: visible; /* Allow overflow */
+    text-overflow: clip; /* Clip text that overflows */
+    white-space: normal; /* Allow text to wrap */
+    }
+    
+.scrollableDialogContent {
+    max-height: 400px; /* Adjust the height as needed */
+    max-width: 400px;  /* Adjust the width as needed */
+    overflow-y: auto;  /* This enables vertical scrolling */
+    }
