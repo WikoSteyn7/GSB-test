@@ -315,7 +315,7 @@ export const DocumentsDetailList = ({ items, onFilesSorted}: Props) => {
                         {item.state}
                     </span>
                 </TooltipHost>
-            )
+            ),
             isPadded: true,
         },
         {
