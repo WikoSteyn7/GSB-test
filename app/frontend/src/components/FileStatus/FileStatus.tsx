@@ -5,7 +5,10 @@ import { useState, useEffect } from "react";
 import { Dropdown, DropdownMenuItemType, IDropdownOption, IDropdownStyles } from '@fluentui/react/lib/Dropdown';
 import { Stack } from "@fluentui/react";
 import { DocumentsDetailList, IDocument } from "./DocumentsDetailList";
-import { ArrowClockwise24Filled } from "@fluentui/react-icons";
+import { Delete24Regular,
+    Send24Regular,
+    ArrowClockwise24Filled
+    } from "@fluentui/react-icons";
 import { animated, useSpring } from "@react-spring/web";
 import { getAllUploadStatus, FileUploadBasicStatus, GetUploadStatusRequest, FileState, getFolders, getTags } from "../../api";
 
@@ -239,6 +242,11 @@ export const FileStatus = ({ className }: Props) => {
                 <ArrowClockwise24Filled className={styles.refreshicon} />
                 <span className={styles.refreshtext}>Refresh</span>
             </div>
+
+
+
+
+            
             </div>
             {isLoading ? (
                 <animated.div style={{ ...animatedStyles }}>
