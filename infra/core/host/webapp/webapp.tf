@@ -70,7 +70,7 @@ resource "azurerm_monitor_autoscale_setting" "scaleout" {
 
 
 
-# Create the web app
+# Create the web app service
 resource "azurerm_linux_web_app" "app_service" {
   name                = var.name
   location            = var.location
@@ -142,6 +142,162 @@ resource "azurerm_linux_web_app" "app_service" {
     }
   }
 
+}
+
+
+// from secure-appservice
+resource "azurerm_linux_web_app" "app_service" {
+  count               = var.is_secure_mode? 1 : 0
+  name                = var.name
+  location            = var.location
+  resource_group_name = var.resourceGroupName
+  service_plan_id = azurerm_service_plan.appServicePlan.id
+  https_only          = true
+  public_network_access_enabled = false
+  tags                = var.tags
+
+  site_config {
+    application_stack {
+      python_version = var.runtimeVersion
+    }
+    always_on                      = var.alwaysOn
+    ftps_state                     = "Disabled"
+    app_command_line               = var.appCommandLine
+    health_check_path              = var.healthCheckPath
+    cors {
+      allowed_origins = concat([var.azure_portal_domain, "https://ms.portal.azure.com"], var.allowedOrigins)
+    }
+  }
+
+  identity {
+    type = var.managedIdentity ? "SystemAssigned" : "None"
+  }
+
+  auth_settings {
+    enabled  = true
+    # Remove the 'active_directory_client_id' attribute
+    issuer = "https://sts.windows.net/${var.tenantId}"
+    runtime_version = "~1"
+    token_store_enabled = true
+    unauthenticated_client_action = "RedirectToLoginPage"
+  }
+}
+
+
+resource "azurerm_cdn_profile" "front_door_profile" { 
+  count               = var.is_secure_mode? 1 : 0
+  name                = var.fdProfileName
+  resource_group_name = var.resourceGroupName
+  location            = "global"
+  sku                 = "Premium_AzureFrontDoor"
+}
+
+resource "azurerm_cdn_endpoint" "front_door_endpoint" {
+  count                        = var.is_secure_mode ? 1 : 0
+  name                         = var.fdEndpointName
+  profile_name                 = azurerm_cdn_profile.front_door_profile.name
+  location                     = "global"
+  resource_group_name          = var.resourceGroupName
+  is_compression_enabled       = true
+  is_http_allowed              = true
+  is_https_allowed             = true
+  querystring_caching_behaviour = "IgnoreQueryString"
+
+  origin {
+    name                = var.fdOriginName
+    host_name           = azurerm_app_service.app_service.default_site_hostname
+    http_port           = 80
+    https_port          = 443
+  }
+}
+
+resource "azurerm_cdn_origin_group" "front_door_origin_group" {
+  count               = var.is_secure_mode ? 1 : 0
+  name                = var.front_door_origin_group_name
+  profile_name        = azurerm_cdn_profile.front_door_profile.name
+  resource_group_name = var.resource_group_name
+
+  load_balancing_sample_size = 4
+  load_balancing_successful_samples_required = 3
+
+  health_probe_path = "/"
+  health_probe_request_type = "HEAD"
+  health_probe_protocol = "Http"
+  health_probe_interval_in_seconds = 100
+}
+
+resource "azurerm_cdn_origin" "front_door_origin" {
+  count               = var.is_secure_mode ? 1 : 0
+  name                = var.front_door_origin_name
+  endpoint_name       = azurerm_cdn_endpoint.front_door_endpoint.name
+  profile_name        = azurerm_cdn_profile.front_door_profile.name
+  resource_group_name = var.resource_group_name
+  host_name           = azurerm_app_service.app_service.default_site_hostname
+  http_port           = 80
+  https_port          = 443
+  origin_group_id     = azurerm_cdn_origin_group.front_door_origin_group.id
+}
+
+resource "azurerm_cdn_route" "front_door_route" {
+  count               = var.is_secure_mode ? 1 : 0
+  name                = var.frontDoorRouteName
+  endpoint_name       = azurerm_cdn_endpoint.front_door_endpoint.name
+  profile_name        = azurerm_cdn_profile.front_door_profile.name
+  resource_group_name = var.resourceGroupName
+  origin_group_id     = azurerm_cdn_origin_group.front_door_origin_group.id
+
+  patterns_to_match = [ "/*" ]
+  forwarding_protocol = "HttpsOnly"
+  https_redirect = true
+  supported_protocols = [ "Http", "Https" ]
+  link_to_default_domain = true
+
+  depends_on = [ azurerm_cdn_origin.front_door_origin ]
+}
+
+resource "azurerm_web_application_firewall_policy" "waf_policy" {
+  count               = var.is_secure_mode? 1 : 0
+  name                = var.wafPolicyName
+  resource_group_name = var.resourceGroupName
+  location            = "Global"
+  policy_settings {
+    mode = var.waf_mode
+    request_body_check = true
+    max_request_body_size_in_kb = 128
+  }
+  managed_rules {
+    managed_rule_set {
+      type = "Microsoft_DefaultRuleSet"
+      version = "2.1"
+      rule_group_override {
+        rule_group_name = "DefaultRuleSet"
+        # Remove the "action" attribute
+      }
+    }
+    managed_rule_set {
+      type = "Microsoft_BotManagerRuleSet"
+      version = "1.0"
+      rule_group_override {
+        rule_group_name = "BotManagerRuleSet"
+        # Remove the "action" attribute
+      }
+    }
+  }
+}
+
+// Attach WAF Policy to the Front Door Endpoint
+resource "azurerm_frontdoor_firewall_policy_link" "link" {
+  count               = var.is_secure_mode ? 1 : 0
+  name                = var.securityPolicyName
+  frontdoor_name      = azurerm_frontdoor.front_door.name
+  resource_group_name = var.resourceGroupName
+  web_application_firewall_policy_id = azurerm_web_application_firewall_policy.waf_policy.id
+}
+
+
+resource "azurerm_app_service_virtual_network_swift_connection" "virtualNetworkConnection" {
+  app_service_id = azurerm_linux_web_app.app_service.id
+  subnet_id      = var.subnetResourceIdOutbound
 }
 
 data "azurerm_key_vault" "existing" {

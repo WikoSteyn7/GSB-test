@@ -2,7 +2,7 @@ variable "name" {
   type = string
 }
 
-variable "plan_name" {
+variable "planName" {
   type = string
 }
 
@@ -107,7 +107,7 @@ variable "healthCheckPath" {
   default = ""
 }
 
-variable "azure_portal_domain" {
+variable "azurePortalDomain" {
   type    = string
   default = ""
 }
@@ -120,4 +120,68 @@ variable "allowedOrigins" {
 variable "runtimeVersion" {
   type    = string
   default = "3.10"
+}
+
+variable "azureEnvironment" {
+  type    = string
+  default = "AzureCloud"
+}
+variable "securityPolicyName" {
+  description = "The name of the security policy"
+  type        = string
+  default     = ""
+}
+
+variable "subnetResourceIdOutbound" {
+  description = "The resource ID of the outbound subnet"
+  type        = string
+  default     = ""
+}
+
+variable "wafPolicyName" {
+  description = "The name of the Web Application Firewall (WAF) policy"
+  type        = string
+  default     = ""
+}
+
+variable "waf_mode" {
+  description = "The mode of the Web Application Firewall (WAF)"
+  type        = string
+  default     = "Detection"
+}
+
+variable "is_secure_mode" {
+  description = "Specifies whether to deploy in secure mode"
+  type        = bool
+  default     = false
+}
+
+variable "fdProfileName" {
+  description = "The name of the Front Door profile"
+  type        = string
+  default     = ""
+}
+
+variable "fdEndpointName" {
+  description = "The name of the Front Door endpoint"
+  type        = string
+  default     = ""
+}
+
+variable "fdOriginName" {
+  description = "The name of the Front Door origin"
+  type        = string
+  default     = ""
+}
+
+variable "appServiceplanName" {
+  description = "The name of the App Service Plan within which to create this App Service"
+  type        = string
+  default     = ""
+}
+
+variable "appServiceplanId" {
+  description = "The ID of the App Service Plan within which to create this App Service"
+  type        = string
+  default     = ""
 }
