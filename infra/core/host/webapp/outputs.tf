@@ -3,9 +3,14 @@ output "identityPrincipalId" {
   value = var.managedIdentity ? azurerm_linux_web_app.app_service.identity.0.principal_id : ""
 }
 
-output "appServiceNname" {
+output "appServiceName" {
   description = "The name of the app service"
   value = azurerm_linux_web_app.app_service.name
+}
+
+output "plan_name" {
+  description = "The name of the plan"
+  value = azurerm_service_plan.appServicePlan.name
 }
 
 output "appServiceId" {

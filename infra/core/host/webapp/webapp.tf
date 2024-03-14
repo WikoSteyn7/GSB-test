@@ -84,7 +84,7 @@ resource "azurerm_linux_web_app" "app_service" {
       python_version = var.runtimeVersion
     }
     always_on                      = var.alwaysOn
-    ftps_state                     = var.ftpsState
+    ftps_state                     = var.is_secure_mode ? "Disabled" : var.ftpsState
     app_command_line               = var.appCommandLine
     health_check_path              = var.healthCheckPath
     cors {
@@ -146,114 +146,50 @@ resource "azurerm_linux_web_app" "app_service" {
 
 
 // from secure-appservice
-resource "azurerm_linux_web_app" "app_service" {
-  count               = var.is_secure_mode? 1 : 0
-  name                = var.name
-  location            = var.location
-  resource_group_name = var.resourceGroupName
-  service_plan_id = azurerm_service_plan.appServicePlan.id
-  https_only          = true
-  public_network_access_enabled = false
-  tags                = var.tags
-
-  site_config {
-    application_stack {
-      python_version = var.runtimeVersion
-    }
-    always_on                      = var.alwaysOn
-    ftps_state                     = "Disabled"
-    app_command_line               = var.appCommandLine
-    health_check_path              = var.healthCheckPath
-    cors {
-      allowed_origins = concat([var.azure_portal_domain, "https://ms.portal.azure.com"], var.allowedOrigins)
+resource "azurerm_frontdoor" "front_door_profile" {
+  count                 = var.is_secure_mode? 1 : 0
+  name                  = var.fdProfileName
+  resource_group_name   = var.resourceGroupName
+  
+  routing_rule {
+    name               = "exampleRoutingRule1"
+    accepted_protocols = ["Http", "Https"]
+    patterns_to_match  = ["/*"]
+    frontend_endpoints = ["exampleFrontendEndpoint1"]
+    forwarding_configuration {
+      forwarding_protocol = "MatchRequest"
+      backend_pool_name   = "webappBackendPool"
     }
   }
 
-  identity {
-    type = var.managedIdentity ? "SystemAssigned" : "None"
+  backend_pool_load_balancing {
+    name = "loadBalancingSettings1"
   }
 
-  auth_settings {
-    enabled  = true
-    # Remove the 'active_directory_client_id' attribute
-    issuer = "https://sts.windows.net/${var.tenantId}"
-    runtime_version = "~1"
-    token_store_enabled = true
-    unauthenticated_client_action = "RedirectToLoginPage"
+  backend_pool_health_probe {
+    name = "healthProbeSetting1"
   }
-}
 
+  backend_pool {
+    name = "webappBackendPool"
+    backend {
+      host_header = azurerm_app_service.app_service.default_site_hostname
+      address     = azurerm_app_service.app_service.default_site_hostname
+      http_port   = 80
+      https_port  = 443
+    }
 
-resource "azurerm_cdn_profile" "front_door_profile" { 
-  count               = var.is_secure_mode? 1 : 0
-  name                = var.fdProfileName
-  resource_group_name = var.resourceGroupName
-  location            = "global"
-  sku                 = "Premium_AzureFrontDoor"
-}
-
-resource "azurerm_cdn_endpoint" "front_door_endpoint" {
-  count                        = var.is_secure_mode ? 1 : 0
-  name                         = var.fdEndpointName
-  profile_name                 = azurerm_cdn_profile.front_door_profile.name
-  location                     = "global"
-  resource_group_name          = var.resourceGroupName
-  is_compression_enabled       = true
-  is_http_allowed              = true
-  is_https_allowed             = true
-  querystring_caching_behaviour = "IgnoreQueryString"
-
-  origin {
-    name                = var.fdOriginName
-    host_name           = azurerm_app_service.app_service.default_site_hostname
-    http_port           = 80
-    https_port          = 443
+    load_balancing_name = "loadBalancingSettings1"
+    health_probe_name   = "healthProbeSetting1"
   }
-}
 
-resource "azurerm_cdn_origin_group" "front_door_origin_group" {
-  count               = var.is_secure_mode ? 1 : 0
-  name                = var.front_door_origin_group_name
-  profile_name        = azurerm_cdn_profile.front_door_profile.name
-  resource_group_name = var.resource_group_name
-
-  load_balancing_sample_size = 4
-  load_balancing_successful_samples_required = 3
-
-  health_probe_path = "/"
-  health_probe_request_type = "HEAD"
-  health_probe_protocol = "Http"
-  health_probe_interval_in_seconds = 100
-}
-
-resource "azurerm_cdn_origin" "front_door_origin" {
-  count               = var.is_secure_mode ? 1 : 0
-  name                = var.front_door_origin_name
-  endpoint_name       = azurerm_cdn_endpoint.front_door_endpoint.name
-  profile_name        = azurerm_cdn_profile.front_door_profile.name
-  resource_group_name = var.resource_group_name
-  host_name           = azurerm_app_service.app_service.default_site_hostname
-  http_port           = 80
-  https_port          = 443
-  origin_group_id     = azurerm_cdn_origin_group.front_door_origin_group.id
-}
-
-resource "azurerm_cdn_route" "front_door_route" {
-  count               = var.is_secure_mode ? 1 : 0
-  name                = var.frontDoorRouteName
-  endpoint_name       = azurerm_cdn_endpoint.front_door_endpoint.name
-  profile_name        = azurerm_cdn_profile.front_door_profile.name
-  resource_group_name = var.resourceGroupName
-  origin_group_id     = azurerm_cdn_origin_group.front_door_origin_group.id
-
-  patterns_to_match = [ "/*" ]
-  forwarding_protocol = "HttpsOnly"
-  https_redirect = true
-  supported_protocols = [ "Http", "Https" ]
-  link_to_default_domain = true
-
-  depends_on = [ azurerm_cdn_origin.front_door_origin ]
-}
+  frontend_endpoint {
+    name                              = var.fdEndpointName
+    host_name                         = var.fdEndpointName
+    session_affinity_enabled          = true
+    session_affinity_ttl_seconds      = 60
+  }
+}  
 
 resource "azurerm_web_application_firewall_policy" "waf_policy" {
   count               = var.is_secure_mode? 1 : 0

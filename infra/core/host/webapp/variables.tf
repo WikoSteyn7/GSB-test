@@ -2,7 +2,7 @@ variable "name" {
   type = string
 }
 
-variable "planName" {
+variable "plan_name" {
   type = string
 }
 
@@ -107,7 +107,7 @@ variable "healthCheckPath" {
   default = ""
 }
 
-variable "azurePortalDomain" {
+variable "azure_portal_domain" {
   type    = string
   default = ""
 }
@@ -158,6 +158,11 @@ variable "is_secure_mode" {
 
 variable "fdProfileName" {
   description = "The name of the Front Door profile"
+  type        = string
+  default     = ""
+}
+variable "fdName" {
+  description = "The name of the Front Door"
   type        = string
   default     = ""
 }
