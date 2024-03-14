@@ -53,7 +53,11 @@ interface Props {
     onRefresh: () => void; 
 }
 
+<<<<<<< Updated upstream
 export const DocumentsDetailList = ({ items, onFilesSorted, onRefresh }: Props) => {
+=======
+export const DocumentsDetailList = React.memo(({ items, onFilesSorted, onSelectionChange}: Props) => {
+>>>>>>> Stashed changes
     const itemsRef = useRef(items);
 
     const onColumnClick = (ev: React.MouseEvent<HTMLElement>, column: IColumn): void => {
@@ -483,4 +487,4 @@ export const DocumentsDetailList = ({ items, onFilesSorted, onRefresh }: Props) 
                 </Panel>
         </div>
     );
-}
+})

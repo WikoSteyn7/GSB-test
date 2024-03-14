@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dropdown, DropdownMenuItemType, IDropdownOption, IDropdownStyles } from '@fluentui/react/lib/Dropdown';
 import { Stack } from "@fluentui/react";
 import { DocumentsDetailList, IDocument } from "./DocumentsDetailList";
@@ -115,6 +115,112 @@ export const FileStatus = ({ className }: Props) => {
         setIsLoading(false);
         setFiles(list);
     }
+
+    // Notification of processing
+    // Define a type for the props of Notification component
+    interface NotificationProps {
+        message: string;
+    }
+
+
+    // *************************************************************
+    // Resubmit processing
+    // New state for managing resubmit dialog visibility and selected items
+    const [isResubmitDialogVisible, setIsResubmitDialogVisible] = useState(false);
+    const [selectedItemsForResubmit, setSelectedItemsForResubmit] = useState<IDocument[]>([]);
+
+    const [notification, setNotification] = useState({ show: false, message: '' });
+
+    const Notification = ({ message }: NotificationProps) => {
+        // Ensure to return null when notification should not be shown
+        if (!notification.show) return null;
+    
+        return <div className={styles.notification}>{message}</div>;
+    };
+
+    useEffect(() => {
+        if (notification.show) {
+            const timer = setTimeout(() => {
+                setNotification({ show: false, message: '' });
+            }, 3000); // Hides the notification after 3 seconds
+            return () => clearTimeout(timer);
+        }
+    }, [notification]);
+
+
+
+    // Function to open the resubmit dialog with selected items
+    const showResubmitConfirmation = () => {
+        // const selectedItems = selectionRef.current.getSelection() as IDocument[];
+        // setSelectedItemsForResubmit(selectedItems);
+        // setIsResubmitDialogVisible(true);
+    };
+
+    // Function to handle actual resubmission
+    const handleResubmit = () => {
+        setIsResubmitDialogVisible(false);
+        console.log("Items to resubmit:", selectedItemsForResubmit);
+        selectedItemsForResubmit.forEach(item => {
+            console.log(`Resubmitting item: ${item.name}`);
+            // resubmit this item
+            const request: ResubmitItemRequest = {
+                path: item.filePath
+            }
+            const response = resubmitItem(request);
+        });
+        // Notification after resubmission
+        setNotification({ show: true, message: 'Processing resubmit. Hit \'Refresh\' to track progress' });
+    };
+    
+
+    // *************************************************************
+    // Delete processing
+    // New state for managing dialog visibility and selected items
+    const [isDeleteDialogVisible, setIsDeleteDialogVisible] = useState(false);
+    const [selectedItemsState, setSelectedItemsState] = useState<IDocument[]>([]);
+
+    const onSelectionChange = useCallback((selectedItems: IDocument[]) => {
+        console.log("incoming selectedItems", selectedItems);
+        setSelectedItemsState(selectedItems);
+    }, []);
+
+    useEffect(() => {
+        console.log("user effect selectedItemsState:", selectedItemsState);
+    }, [selectedItemsState]);
+
+    // Function to open the dialog with selected items
+    const showDeleteConfirmation = () => {
+        setIsDeleteDialogVisible(true);
+    };
+
+    // // Sandbox to demo empty array
+    // const handleDelete = () => {
+    //     console.log("Items to delete:", selectedItemsState);
+    // };    
+
+
+    // Function to handle actual deletion
+    const handleDelete = () => {
+        console.log("incoming selectedItems", selectedItemsState);
+        setIsDeleteDialogVisible(false);
+        selectedItemsState.forEach(item => {
+            console.log(`Deleting item: ${item.name}`);
+            // delete this item
+            const request: DeleteItemRequest = {
+                path: item.filePath
+            }
+            const response = deleteItem(request);
+        });
+        // Notification after deletion
+        setNotification({ show: true, message: 'Processing deletion. Hit \'Refresh\' to track progress' });
+    };    
+
+    // Function to handle the delete button click
+    const handleDeleteClick = () => {
+        showDeleteConfirmation();
+    };
+
+    // ********************************************************************
 
     // fetch unique folder names from Azure Blob Storage
     const fetchFolders = async () => {
