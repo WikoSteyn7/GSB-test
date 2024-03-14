@@ -1,0 +1,23 @@
+{
+	"AcceptedFileTypes": [
+		"pdf",
+		"docx",
+		"html",
+		"htm",
+		"csv",
+		"md",
+		"pptx",
+		"txt",
+		"json",
+		"xlsx",
+		"xml",
+		"eml",
+		"msg"
+	],
+	"SharepointSite": [
+
+	],
+	"SharepointEntryFolder": [
+
+	]
+}
