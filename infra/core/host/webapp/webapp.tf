@@ -205,30 +205,30 @@ resource "azurerm_web_application_firewall_policy" "waf_policy" {
     managed_rule_set {
       type = "Microsoft_DefaultRuleSet"
       version = "2.1"
-      rule_group_override {
-        rule_group_name = "DefaultRuleSet"
+ #     rule_group_override {
+ #       rule_group_name = "DefaultRuleSet"
         # Remove the "action" attribute
-      }
+ #     }
     }
     managed_rule_set {
       type = "Microsoft_BotManagerRuleSet"
       version = "1.0"
-      rule_group_override {
-        rule_group_name = "BotManagerRuleSet"
+ #     rule_group_override {
+ #       rule_group_name = "BotManagerRuleSet"
         # Remove the "action" attribute
-      }
+ #     }
     }
   }
 }
 
-// Attach WAF Policy to the Front Door Endpoint
-resource "azurerm_frontdoor_firewall_policy_link" "link" {
-  count               = var.is_secure_mode ? 1 : 0
-  name                = var.securityPolicyName
-  frontdoor_name      = azurerm_frontdoor.front_door.name
-  resource_group_name = var.resourceGroupName
-  web_application_firewall_policy_id = azurerm_web_application_firewall_policy.waf_policy.id
-}
+# // Attach WAF Policy to the Front Door Endpoint
+# resource "azurerm_frontdoor_firewall_policy_link" "link" {
+#  count               = var.is_secure_mode ? 1 : 0
+#  name                = var.securityPolicyName
+#  frontdoor_name      = azurerm_frontdoor.front_door.name
+#  resource_group_name = var.resourceGroupName
+#  web_application_firewall_policy_id = azurerm_web_application_firewall_policy.waf_policy.id
+#}
 
 
 resource "azurerm_app_service_virtual_network_swift_connection" "virtualNetworkConnection" {
