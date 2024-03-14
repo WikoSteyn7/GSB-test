@@ -43,19 +43,31 @@ from azure.cosmos import CosmosClient, PartitionKey, exceptions
 client = CosmosClient(cosmosdb_url, credential=cosmosdb_key)
 
 try:
-    # Attempt to get the database
-    database = client.get_database_client(cosmosdb_database)
-    container = database.get_container_client(cosmosdb_container)
-
-    # Query these items using SQL query
-    items = list(container.query_items(
+    # Get old status docs
+    database = client.get_database_client('statusdb')
+    container = database.get_container_client('statuscontainer')
+    old_status_items = list(container.query_items(
         query="SELECT * FROM c",
         enable_cross_partition_query=True
     ))
+    
+    # Get old tags docs
+    database = client.get_database_client('tagdb')
+    container = database.get_container_client('tagcontainer')
+    old_tags_items = list(container.query_items(
+        query="SELECT * FROM c",
+        enable_cross_partition_query=True
+    ))
+    
+    
+    
+    
+    
+    
+    
 
     # Print the results
-    for item in items:
-        print(item)
+    
 
 except exceptions.CosmosHttpResponseError as e:
     print(f'An error occurred: {e}')
