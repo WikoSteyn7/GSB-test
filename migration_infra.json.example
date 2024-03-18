@@ -1,0 +1,242 @@
+{
+  "AZURE_AI_TEXT_ANALYTICS_DOMAIN": {
+    "sensitive": false,
+    "type": "string",
+    "value": "api.cognitive.microsoft.com"
+  },
+  "AZURE_AI_TRANSLATION_DOMAIN": {
+    "sensitive": false,
+    "type": "string",
+    "value": "api.cognitive.microsofttranslator.com"
+  },
+  "AZURE_ARM_MANAGEMENT_API": {
+    "sensitive": false,
+    "type": "string",
+    "value": "https://management.azure.com"
+  },
+  "AZURE_BLOB_DROP_STORAGE_CONTAINER": {
+    "sensitive": false,
+    "type": "string",
+    "value": "upload"
+  },
+  "AZURE_BLOB_LOG_STORAGE_CONTAINER": {
+    "sensitive": false,
+    "type": "string",
+    "value": "logs"
+  },
+  "AZURE_COSMOSDB_LOG_CONTAINER_NAME": {
+    "sensitive": false,
+    "type": "string",
+    "value": "statuscontainer"
+  },
+  "AZURE_COSMOSDB_LOG_DATABASE_NAME": {
+    "sensitive": false,
+    "type": "string",
+    "value": "statusdb"
+  },
+  "AZURE_COSMOSDB_URL": {
+    "sensitive": false,
+    "type": "string",
+    "value": "https://infoasst-cosmos-1cahq.documents.azure.com:443/"
+  },
+  "AZURE_ENVIRONMENT": {
+    "sensitive": false,
+    "type": "string",
+    "value": "AzureCloud"
+  },
+  "AZURE_FORM_RECOGNIZER_ENDPOINT": {
+    "sensitive": false,
+    "type": "string",
+    "value": "https://infoasst-fr-hmmoe.cognitiveservices.azure.com/"
+  },
+  "AZURE_FUNCTION_APP_NAME": {
+    "sensitive": false,
+    "type": "string",
+    "value": "infoasst-func-hmmoe"
+  },
+  "AZURE_LOCATION": {
+    "sensitive": false,
+    "type": "string",
+    "value": "westeurope"
+  },
+  "AZURE_OPENAI_CHAT_GPT_DEPLOYMENT": {
+    "sensitive": false,
+    "type": "string",
+    "value": "gpt-4"
+  },
+  "AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME": {
+    "sensitive": false,
+    "type": "string",
+    "value": "text-embedding-ada-002"
+  },
+  "AZURE_OPENAI_ENDPOINT": {
+    "sensitive": false,
+    "type": "string",
+    "value": "https://aoai-inst-4.openai.azure.com/"
+  },
+  "AZURE_OPENAI_RESOURCE_GROUP": {
+    "sensitive": false,
+    "type": "string",
+    "value": "aoai_host"
+  },
+  "AZURE_OPENAI_SERVICE": {
+    "sensitive": false,
+    "type": "string",
+    "value": "aoai-inst-4"
+  },
+  "AZURE_SEARCH_INDEX": {
+    "sensitive": false,
+    "type": "string",
+    "value": "vector-index"
+  },
+  "AZURE_SEARCH_SERVICE": {
+    "sensitive": false,
+    "type": "string",
+    "value": "infoasst-search-hmmoe"
+  },
+  "AZURE_SEARCH_SERVICE_ENDPOINT": {
+    "sensitive": false,
+    "type": "string",
+    "value": "https://infoasst-search-hmmoe.search.windows.net/"
+  },
+  "AZURE_STORAGE_ACCOUNT": {
+    "sensitive": false,
+    "type": "string",
+    "value": "infoasststorehmmoe"
+  },
+  "AZURE_STORAGE_ACCOUNT_ENDPOINT": {
+    "sensitive": false,
+    "type": "string",
+    "value": "https://infoasststorehmmoe.blob.core.windows.net/"
+  },
+  "AZURE_STORAGE_CONTAINER": {
+    "sensitive": false,
+    "type": "string",
+    "value": "content"
+  },
+  "AZURE_STORAGE_UPLOAD_CONTAINER": {
+    "sensitive": false,
+    "type": "string",
+    "value": "upload"
+  },
+  "AZURE_SUBSCRIPTION_ID": {
+    "sensitive": false,
+    "type": "string",
+    "value": "0d4b9684-ad97-4326-8ed0-df8c5b780d35"
+  },
+  "BACKEND_NAME": {
+    "sensitive": false,
+    "type": "string",
+    "value": "infoasst-web-hmmoe"
+  },
+  "BACKEND_URI": {
+    "sensitive": false,
+    "type": "string",
+    "value": "https://infoasst-web-hmmoe.azurewebsites.net"
+  },
+  "BING_SEARCH_ENDPOINT": {
+    "sensitive": false,
+    "type": "string",
+    "value": "https://api.bing.microsoft.com/"
+  },
+  "BING_SEARCH_KEY": {
+    "sensitive": false,
+    "type": "string",
+    "value": "c30263b4c9024ed0983f04870c14a826"
+  },
+  "BLOB_STORAGE_ACCOUNT_ENDPOINT": {
+    "sensitive": false,
+    "type": "string",
+    "value": "https://infoasststorehmmoe.blob.core.windows.net/"
+  },
+  "CHAT_WARNING_BANNER_TEXT": {
+    "sensitive": false,
+    "type": "string",
+    "value": ""
+  },
+  "CHUNK_TARGET_SIZE": {
+    "sensitive": false,
+    "type": "string",
+    "value": "750"
+  },
+  "DEPLOYMENT_KEYVAULT_NAME": {
+    "sensitive": false,
+    "type": "string",
+    "value": "infoasst-kv-1cahq"
+  },
+  "EMBEDDING_DEPLOYMENT_NAME": {
+    "sensitive": false,
+    "type": "string",
+    "value": "text-embedding-ada-002"
+  },
+  "EMBEDDING_VECTOR_SIZE": {
+    "sensitive": false,
+    "type": "string",
+    "value": "1536"
+  },
+  "ENABLE_BING_SAFE_SEARCH": {
+    "sensitive": false,
+    "type": "bool",
+    "value": true
+  },
+  "ENABLE_DEV_CODE": {
+    "sensitive": false,
+    "type": "bool",
+    "value": false
+  },
+  "ENRICHMENT_APPSERVICE_NAME": {
+    "sensitive": false,
+    "type": "string",
+    "value": "infoasst-enrichmentweb-hmmoe"
+  },
+  "ENRICHMENT_APPSERVICE_URL": {
+    "sensitive": false,
+    "type": "string",
+    "value": "https://infoasst-enrichmentweb-hmmoe.azurewebsites.net"
+  },
+  "ENRICHMENT_ENDPOINT": {
+    "sensitive": false,
+    "type": "string",
+    "value": "https://westeurope.api.cognitive.microsoft.com/"
+  },
+  "ENRICHMENT_NAME": {
+    "sensitive": false,
+    "type": "string",
+    "value": "infoasst-enrichment-cog-hmmoe"
+  },
+  "FR_API_VERSION": {
+    "sensitive": false,
+    "type": "string",
+    "value": "2023-07-31"
+  },
+  "RESOURCE_GROUP_NAME": {
+    "sensitive": false,
+    "type": "string",
+    "value": "infoasst-geearl-333"
+  },
+  "STREAMLIT_HOST_URI": {
+    "sensitive": false,
+    "type": "string",
+    "value": "localhost"
+  },
+  "TARGET_EMBEDDINGS_MODEL": {
+    "sensitive": false,
+    "type": "string",
+    "value": "azure-openai_text-embedding-ada-002"
+  },
+  "TARGET_PAGES": {
+    "sensitive": false,
+    "type": "string",
+    "value": "ALL"
+  },
+  "TARGET_TRANSLATION_LANGUAGE": {
+    "sensitive": false,
+    "type": "string",
+    "value": "en"
+  },
+  "USE_AZURE_OPENAI_EMBEDDINGS": {
+    "sensitive": false,
+    "type": "bool",
+    "value": true
+  }
+}

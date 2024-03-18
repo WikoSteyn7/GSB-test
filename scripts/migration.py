@@ -36,8 +36,6 @@ with open('inf_output.json', 'r') as file:
     inf_output = json.load(file)
     
 cosmosdb_url_new = inf_output['AZURE_COSMOSDB_URL']['value']
-cosmosdb_container_new = inf_output['AZURE_COSMOSDB_LOG_CONTAINER_NAME']['value']
-cosmosdb_database_new = inf_output['AZURE_COSMOSDB_LOG_DATABASE_NAME']['value']
 key_vault_name_new = inf_output['DEPLOYMENT_KEYVAULT_NAME']['value']
 key_vault_url_new = inf_output['DEPLOYMENT_KEYVAULT_URL']['value']
 
@@ -53,8 +51,6 @@ with open('inf_output.json', 'r') as file:
     inf_output = json.load(file)
     
 cosmosdb_url_old = inf_output['AZURE_COSMOSDB_URL']['value']
-cosmosdb_container_old = inf_output['AZURE_COSMOSDB_LOG_CONTAINER_NAME']['value']
-cosmosdb_database_old = inf_output['AZURE_COSMOSDB_LOG_DATABASE_NAME']['value']
 key_vault_name_old = inf_output['DEPLOYMENT_KEYVAULT_NAME']['value']
 key_vault_url_old = inf_output['DEPLOYMENT_KEYVAULT_URL']['value']
 
@@ -94,6 +90,7 @@ try:
     for item in old_status_items:
         if item['id'] in tags_dict:
             item['tags'] = tags_dict[item['id']]
+            item['migration_log'] = [f'Migrated tags & status from {cosmosdb_url_old} old tags container to status container']
         
     # Write merged json documents to the new cosmos database
     client = CosmosClient(cosmosdb_url_new, credential=cosmosdb_key_new)
