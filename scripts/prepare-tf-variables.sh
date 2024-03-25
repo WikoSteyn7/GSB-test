@@ -34,5 +34,11 @@ export TF_VAR_cuaId=$CUSTOMER_USAGE_ATTRIBUTION_ID
 export TF_VAR_enableDevCode=$ENABLE_DEV_CODE
 export TF_VAR_video_indexer_api_version=$VIDEO_INDEXER_API_VERSION
 export TF_VAR_enableBingSafeSearch=$ENABLE_BING_SAFE_SEARCH
-# The following variables are used to configure the Azure environment specific settings
 export TF_VAR_azure_environment=$AZURE_ENVIRONMENT
+export TF_VAR_is_secure_mode=$SECURE_MODE
+export TF_VAR_enableWebChat=$ENABLE_WEB_CHAT
+export TF_VAR_enableUngroundedChat=$ENABLE_UNGROUNDED_CHAT
+export TF_VAR_enableMathAssitant=$ENABLE_MATH_ASSISTANT
+export TF_VAR_enableTabularDataAssistant=$ENABLE_TABULAR_DATA_ASSISTANT
+export TF_VAR_enableSharePointConnector=$ENABLE_SHAREPOINT_CONNECTOR
+export TF_VAR_enableMultimedia=$ENABLE_MULTIMEDIA

@@ -303,9 +303,9 @@ export const DocumentsDetailList = React.memo(({ items, onFilesSorted, onSelecti
             onColumnClick: onColumnClick,
             data: 'string',
             onRender: (item: IDocument) => (
-                <TooltipHost content={`${item.state_description} `}>
+                <TooltipHost content={`${item.state} `}>
                     <span onClick={() => onStateColumnClick(item)} style={{ cursor: 'pointer' }}>
-                        {item.state_description}
+                        {item.state}
                     </span>
                     {item.state === 'Error' && <a href="javascript:void(0);" onClick={() => retryErroredFile(item)}> - Retry File</a>}
                 </TooltipHost>
@@ -322,12 +322,6 @@ export const DocumentsDetailList = React.memo(({ items, onFilesSorted, onSelecti
             ariaLabel: 'Column operations for folder, Press to sort by folder',
             onColumnClick: onColumnClick,
             data: 'string',
-            onRender: (item: IDocument) => (  
-                <TooltipHost content={`${item.state} `}>  
-                    <span>{item.filePath.split('/').slice(1, -1).join('/')}</span>  
-                    {item.filePath === 'Error' && <a href="javascript:void(0);" onClick={() => retryErroredFile(item)}> Retry File</a>}  
-                </TooltipHost>  
-            ), 
         },
         {
             key: 'tags',
