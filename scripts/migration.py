@@ -95,7 +95,7 @@ try:
     # Write merged json documents to the new cosmos database
     client = CosmosClient(cosmosdb_url_new, credential=cosmosdb_key_new)
     database_new = client.get_database_client('statusdb')
-    container_new = database_new.get_container_client('zztop')                  #   <---  change this before PR *********************************
+    container_new = database_new.get_container_client('statuscontainer')                  #   <---  change this before PR *********************************
     for item in old_status_items:
         container_new.upsert_item(item)
     
