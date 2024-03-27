@@ -70,5 +70,8 @@ import-state: check-subscription ## import state of current srevcies to TF state
 merge-databases: ## merge the status and tags db's to the status db
 	python ./scripts/merge-databases.py
 
+pull-assests: check-subscription ## import state of current srevcies to TF state
+	@./scripts/inf-pull-assets.sh
+
 # Command to merge databases and import TF state in prep for an upgrade from 1.0 to 1.n
 prep-upgrade: merge-databases import-state 
