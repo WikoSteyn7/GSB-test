@@ -64,5 +64,11 @@ destroy-inf: check-subscription
 functional-tests: extract-env ## Run functional tests to check the processing pipeline is working
 	@./scripts/functional-tests.sh	
 
-run-migration: ## Migrate from bicep to terraform
+import-state: check-subscription ## import state of current srevcies to TF state
+	@./scripts/inf-import-state.sh
+
+merge-databases: ## merge the status and tags db's to the status db
 	python ./scripts/merge-databases.py
+
+# Command to merge databases and import TF state in prep for an upgrade from 1.0 to 1.n
+prep-upgrade: merge-databases import-state 
