@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Stack, IconButton } from "@fluentui/react";
 import { ShieldCheckmark20Regular } from '@fluentui/react-icons';
 import DOMPurify from "dompurify";
@@ -12,9 +12,11 @@ import { Approaches, ChatResponse, getCitationFilePath, ChatMode } from "../../a
 import { parseAnswerToHtml } from "./AnswerParser";
 import { AnswerIcon } from "./AnswerIcon";
 import { RAIPanel } from "../RAIPanel";
+import CharacterStreamer from "../CharacterStreamer/CharacterStreamer";
 
 interface Props {
     answer: ChatResponse;
+    answerEventSource?: EventSource;
     isSelected?: boolean;
     onCitationClicked: (filePath: string, sourcePath: string, pageNumber: string) => void;
     onThoughtProcessClicked: () => void;
@@ -27,11 +29,13 @@ interface Props {
     showFollowupQuestions?: boolean;
     onAdjustClick?: () => void;
     onRegenerateClick?: () => void;
+    setAnswer: (response: ChatResponse) => void;
     chatMode: ChatMode;
 }
 
 export const Answer = ({
     answer,
+    answerEventSource,
     isSelected,
     onCitationClicked,
     onThoughtProcessClicked,
@@ -44,11 +48,26 @@ export const Answer = ({
     showFollowupQuestions,
     onAdjustClick,
     onRegenerateClick,
+    setAnswer,
     chatMode
 }: Props) => {
-    const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, answer.approach, answer.work_citation_lookup, answer.web_citation_lookup, answer.thought_chain, onCitationClicked), [answer]);
+    const [finalAnswer, setFinalAnswer] = useState<string>("");
+    const parsedAnswer = useMemo(() => parseAnswerToHtml(finalAnswer, answer.approach, answer.work_citation_lookup, answer.web_citation_lookup, answer.thought_chain, onCitationClicked), [finalAnswer]);
 
-    const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
+    // const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
+
+    const handleCloseEvent = () => {
+        if (answerEventSource) {
+            answerEventSource.close();
+            console.log('EventSource closed');
+            console.log(finalAnswer);
+        }
+    }
+
+    useEffect(() => {
+        // console.log('Final Answer: ' + finalAnswer);
+        setFinalAnswer(finalAnswer);
+    }, [finalAnswer]);
 
     return (
         <Stack className={`${answer.approach == Approaches.ReadRetrieveRead ? styles.answerContainerWork : 
@@ -90,7 +109,9 @@ export const Answer = ({
                         <ShieldCheckmark20Regular></ShieldCheckmark20Regular>Your personal and company data are protected
                     </div>
                 }
-                <div className={answer.approach == Approaches.GPTDirect ? styles.answerTextUngrounded : styles.answerText} dangerouslySetInnerHTML={{ __html: sanitizedAnswerHtml }}></div>
+                
+               {finalAnswer && <div className={answer.approach == Approaches.GPTDirect ? styles.answerTextUngrounded : styles.answerText} dangerouslySetInnerHTML={{ __html: parsedAnswer.answerHtml }}></div>}
+               {!finalAnswer && <CharacterStreamer finalAnswer={(data) => {setFinalAnswer(data)}} classNames={answer.approach == Approaches.GPTDirect ? styles.answerTextUngrounded : styles.answerText} typingSpeed={5} eventSource={answerEventSource} onStreamingComplete={handleCloseEvent} />}
             </Stack.Item>
 
             {(parsedAnswer.approach == Approaches.ChatWebRetrieveRead && !!parsedAnswer.web_citations.length) && (

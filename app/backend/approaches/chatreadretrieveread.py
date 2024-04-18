@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 import re
 import logging
 import urllib.parse
@@ -43,7 +44,8 @@ class ChatReadRetrieveReadApproach(Approach):
     -If the source document has an answer, please respond with citation.You must include a citation to each document referenced only once when you find answer in source documents.      
     -If you cannot find answer in below sources, respond with I am not sure.Do not provide personal opinions or assumptions and do not include citations.
     -Identify the language of the user's question and translate the final response to that language.if the final answer is " I am not sure" then also translate it to the language of the user's question and then display translated response only. nothing else.
-
+    -Use HTML to format the response into paragraphs, lists, and tables. A paragraph should consist of no more than 4-5 sentences.
+    -List items should have their own line, do not use - or * to denote a list, use <ul> and <li> tags.
     {follow_up_questions_prompt}
     {injected_prompt}
     """
@@ -347,7 +349,8 @@ class ChatReadRetrieveReadApproach(Approach):
             model=self.model_name,
             messages=messages,
             temperature=float(overrides.get("response_temp")) or 0.6,
-            n=1
+            n=1,
+            stream=True
         )
 
         elif self.model_name.startswith("gpt-4"):
@@ -379,29 +382,46 @@ class ChatReadRetrieveReadApproach(Approach):
             messages=messages,
             temperature=float(overrides.get("response_temp")) or 0.6,
             max_tokens=1024,
-            n=1
+            n=1,
+            stream=True
         )
-        # STEP 4: Format the response
-        msg_to_display = '\n\n'.join([str(message) for message in messages])
-        generated_response=chat_completion.choices[0].message.content
-
-        # # Detect the language of the response
-        response_language = self.detect_language(generated_response)
-        #if response is not in user's language, translate it to user's language
-        if response_language != detectedlanguage:
-            translated_response = self.translate_response(generated_response, detectedlanguage)
-        else:
-            translated_response = generated_response
-        thought_chain["work_response"] = urllib.parse.unquote(translated_response)
         
-        return {
+        initial_data = {
             "data_points": data_points,
-            "answer": f"{urllib.parse.unquote(translated_response)}",
-            "thoughts": f"Searched for:<br>{generated_query}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
+            # "thoughts": f"Searched for:<br>{generated_query}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
             "thought_chain": thought_chain,
             "work_citation_lookup": citation_lookup,
             "web_citation_lookup": {}
         }
+        yield f"event: startup\ndata: {json.dumps(initial_data)}\n\n"
+        
+        # STEP 4: Format the response
+        async for chunk in chat_completion:
+            # Check if there is at least one element and the first element has the key 'delta'
+            if chunk.choices and isinstance(chunk.choices[0], dict) and 'content' in chunk.choices[0].delta:
+                yield f"data: {chunk.choices[0].delta.content}\n\n"
+                
+        yield (f'event: end\ndata: Stream ended\n\n')
+        #msg_to_display = '\n\n'.join([str(message) for message in messages])
+        #generated_response=chat_completion.choices[0].message.content
+
+        # Detect the language of the response
+        response_language = self.detect_language(generated_response)
+        # if response is not in user's language, translate it to user's language
+        if response_language != detectedlanguage:
+            translated_response = self.translate_response(generated_response, detectedlanguage)
+        #else:
+            translated_response = generated_response
+        thought_chain["work_response"] = urllib.parse.unquote(translated_response)
+        
+        #return {
+        #    "data_points": data_points,
+        #    "answer": f"{urllib.parse.unquote(translated_response)}",
+        #    "thoughts": f"Searched for:<br>{generated_query}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
+        #    "thought_chain": thought_chain,
+        #    "work_citation_lookup": citation_lookup,
+        #    "web_citation_lookup": {}
+        #}
 
     def detect_language(self, text: str) -> str:
         """ Function to detect the language of the text"""

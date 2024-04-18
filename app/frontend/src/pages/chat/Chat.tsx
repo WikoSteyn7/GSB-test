@@ -68,6 +68,7 @@ const Chat = () => {
 
     const [selectedAnswer, setSelectedAnswer] = useState<number>(0);
     const [answers, setAnswers] = useState<[user: string, response: ChatResponse][]>([]);
+    const [answerEventSource, setAnswerEventSource] = useState<EventSource | undefined>(undefined);
 
     async function fetchFeatureFlags() {
         try {
@@ -118,8 +119,19 @@ const Chat = () => {
                 thought_chain: thought_chain
             };
             const result = await chatApi(request);
-            result.approach = approach;
-            setAnswers([...answers, [question, result]]);
+            // result.approach = approach;
+            // This answer will get updated in the Answer component as part of a callback
+            const temp: ChatResponse = {
+                answer: "",
+                thoughts: "",
+                data_points: [],
+                approach: approach,
+                thought_chain: {},
+                work_citation_lookup: {},
+                web_citation_lookup: {}
+            };
+            setAnswerEventSource(result);
+            setAnswers([...answers, [question, temp]]);
         } catch (e) {
             setError(e);
         } finally {
@@ -299,6 +311,14 @@ const Chat = () => {
         };
     }, []);
 
+    const updateAnswerAtIndex = (index: number, response: ChatResponse) => {
+        setAnswers(currentAnswers => {
+            const updatedAnswers = [...currentAnswers];
+            updatedAnswers[index] = [updatedAnswers[index][0], response];
+            return updatedAnswers;
+        });
+    }
+
     return (
         <div className={styles.container}>
             <div className={styles.subHeader}>
@@ -357,6 +377,8 @@ const Chat = () => {
                                         <Answer
                                             key={index}
                                             answer={answer[1]}
+                                            answerEventSource={answerEventSource}
+                                            setAnswer={(response) => updateAnswerAtIndex(index, response)}
                                             isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
                                             onCitationClicked={(c, s, p) => onShowCitation(c, s, p, index)}
                                             onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
