@@ -44,7 +44,7 @@ class ChatReadRetrieveReadApproach(Approach):
     -If the source document has an answer, please respond with citation.You must include a citation to each document referenced only once when you find answer in source documents.      
     -If you cannot find answer in below sources, respond with I am not sure.Do not provide personal opinions or assumptions and do not include citations.
     -Identify the language of the user's question and translate the final response to that language.if the final answer is " I am not sure" then also translate it to the language of the user's question and then display translated response only. nothing else.
-    -Use HTML to format the response into paragraphs, lists, and tables. A paragraph should consist of no more than 4-5 sentences.
+    -Use HTML to format the response into paragraphs, lists, and tables.
     -List items should have their own line, do not use - or * to denote a list, use <ul> and <li> tags.
     {follow_up_questions_prompt}
     {injected_prompt}
@@ -406,13 +406,13 @@ class ChatReadRetrieveReadApproach(Approach):
         #generated_response=chat_completion.choices[0].message.content
 
         # Detect the language of the response
-        response_language = self.detect_language(generated_response)
+        #response_language = self.detect_language(generated_response)
         # if response is not in user's language, translate it to user's language
-        if response_language != detectedlanguage:
-            translated_response = self.translate_response(generated_response, detectedlanguage)
+        #if response_language != detectedlanguage:
+        #    translated_response = self.translate_response(generated_response, detectedlanguage)
         #else:
-            translated_response = generated_response
-        thought_chain["work_response"] = urllib.parse.unquote(translated_response)
+        #    translated_response = generated_response
+        #thought_chain["work_response"] = urllib.parse.unquote(translated_response)
         
         #return {
         #    "data_points": data_points,

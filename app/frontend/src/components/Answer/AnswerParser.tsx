@@ -6,7 +6,7 @@ import { getCitationFilePath, Approaches } from "../../api";
 
 import styles from "./Answer.module.css";
 
-export type HtmlParsedAnswer = {
+type HtmlParsedAnswer = {
     answerHtml: string;
     work_citations: string[];
     web_citations: string[];

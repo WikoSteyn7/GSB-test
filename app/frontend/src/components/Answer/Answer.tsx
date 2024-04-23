@@ -13,6 +13,9 @@ import { parseAnswerToHtml } from "./AnswerParser";
 import { AnswerIcon } from "./AnswerIcon";
 import { RAIPanel } from "../RAIPanel";
 import CharacterStreamer from "../CharacterStreamer/CharacterStreamer";
+import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
 
 interface Props {
     answer: ChatResponse;
@@ -51,8 +54,8 @@ export const Answer = ({
     setAnswer,
     chatMode
 }: Props) => {
-    const [finalAnswer, setFinalAnswer] = useState<string>("");
-    const parsedAnswer = useMemo(() => parseAnswerToHtml(finalAnswer, answer.approach, answer.work_citation_lookup, answer.web_citation_lookup, answer.thought_chain, onCitationClicked), [finalAnswer]);
+    const [finalAnswer, setFinalAnswer] = useState<ChatResponse>(answer);
+    const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, answer.approach, answer.work_citation_lookup, answer.web_citation_lookup, answer.thought_chain, onCitationClicked), [answer]);
 
     // const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
 
@@ -60,14 +63,8 @@ export const Answer = ({
         if (answerEventSource) {
             answerEventSource.close();
             console.log('EventSource closed');
-            console.log(finalAnswer);
         }
     }
-
-    useEffect(() => {
-        // console.log('Final Answer: ' + finalAnswer);
-        setFinalAnswer(finalAnswer);
-    }, [finalAnswer]);
 
     return (
         <Stack className={`${answer.approach == Approaches.ReadRetrieveRead ? styles.answerContainerWork : 
@@ -110,8 +107,8 @@ export const Answer = ({
                     </div>
                 }
                 
-               {finalAnswer && <div className={answer.approach == Approaches.GPTDirect ? styles.answerTextUngrounded : styles.answerText} dangerouslySetInnerHTML={{ __html: parsedAnswer.answerHtml }}></div>}
-               {!finalAnswer && <CharacterStreamer finalAnswer={(data) => {setFinalAnswer(data)}} classNames={answer.approach == Approaches.GPTDirect ? styles.answerTextUngrounded : styles.answerText} typingSpeed={5} eventSource={answerEventSource} onStreamingComplete={handleCloseEvent} />}
+               {answer.answer && <div className={answer.approach == Approaches.GPTDirect ? styles.answerTextUngrounded : styles.answerText}><ReactMarkdown children={parsedAnswer.answerHtml} rehypePlugins={[rehypeRaw, rehypeSanitize]}></ReactMarkdown></div>}
+               {!answer.answer && <CharacterStreamer approach={answer.approach} finalAnswer={(data) => {setAnswer(data)}} classNames={answer.approach == Approaches.GPTDirect ? styles.answerTextUngrounded : styles.answerText} typingSpeed={5} eventSource={answerEventSource} onStreamingComplete={handleCloseEvent} />}
             </Stack.Item>
 
             {(parsedAnswer.approach == Approaches.ChatWebRetrieveRead && !!parsedAnswer.web_citations.length) && (

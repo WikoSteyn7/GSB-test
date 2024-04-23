@@ -126,7 +126,10 @@ const Chat = () => {
                 thoughts: "",
                 data_points: [],
                 approach: approach,
-                thought_chain: {},
+                thought_chain: {
+                    "work_response": "",
+                    "web_response": ""
+                },
                 work_citation_lookup: {},
                 web_citation_lookup: {}
             };
@@ -315,6 +318,7 @@ const Chat = () => {
         setAnswers(currentAnswers => {
             const updatedAnswers = [...currentAnswers];
             updatedAnswers[index] = [updatedAnswers[index][0], response];
+            console.log(updatedAnswers);
             return updatedAnswers;
         });
     }
