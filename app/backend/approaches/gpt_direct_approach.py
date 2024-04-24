@@ -36,7 +36,8 @@ class GPTDirectApproach(Approach):
      
     system_message_chat_conversation = """You are an Azure OpenAI Completion system. Your persona is {systemPersona} who helps users interact with a Large Language Model. {response_length_prompt}
         User persona is {userPersona}. You are having a conversation with a user and you need to provide a response.    
-        
+        Use HTML to format the response into paragraphs, lists, and tables.
+        List items should have their own line, do not use - or * to denote a list, use <ul> and <li> tags.
         {follow_up_questions_prompt}
         {injected_prompt}
         
@@ -129,24 +130,32 @@ class GPTDirectApproach(Approach):
             max_tokens=self.chatgpt_token_limit - 500
         )
 
-        chat_completion = openai.ChatCompletion.create(
+        chat_completion = await openai.ChatCompletion.acreate(
             deployment_id=self.chatgpt_deployment,
             model=self.model_name,
             messages=messages,
             temperature=float(overrides.get("response_temp")) or 0.6,
-            n=1
+            n=1,
+            stream=True
         )  
-
+        # STEP 4: Format the response
+        async for chunk in chat_completion:
+            # Check if there is at least one element and the first element has the key 'delta'
+            if chunk.choices and isinstance(chunk.choices[0], dict) and 'content' in chunk.choices[0].delta:
+                yield f"data: {chunk.choices[0].delta.content}\n\n"
+                
+        yield (f'event: end\ndata: Stream ended\n\n')
+        
         #Format the response
-        msg_to_display = '\n\n'.join([str(message) for message in messages])
-        thought_chain["ungrounded_response"] = urllib.parse.unquote(chat_completion.choices[0].message.content)
+        #msg_to_display = '\n\n'.join([str(message) for message in messages])
+        #thought_chain["ungrounded_response"] = urllib.parse.unquote(chat_completion.choices[0].message.content)
 
-        return {
-            "data_points": [],
-            "answer": f"{urllib.parse.unquote(chat_completion.choices[0].message.content)}",
-            "thoughts": f"Searched for:<br>{user_q}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
-            "thought_chain": thought_chain,
-            "work_citation_lookup": {},
-            "web_citation_lookup": {}
-        }
+        #return {
+        #    "data_points": [],
+        #    "answer": f"{urllib.parse.unquote(chat_completion.choices[0].message.content)}",
+        #    #"thoughts": f"Searched for:<br>{user_q}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
+        #    "thought_chain": thought_chain,
+        #    "work_citation_lookup": {},
+        #    "web_citation_lookup": {}
+        #}
     

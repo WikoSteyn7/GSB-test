@@ -125,7 +125,7 @@ class CompareWebWithWork(Approach):
                 startupData = json.loads(event.split('\n')[1].split('data: ')[1])
                 # print("Startup Data:", json_data)
             elif 'data:' in event and 'event: end' not in event:
-                content += event.split('data: ')[1].strip()
+                content += event[6:].replace('\n\n', '')  # Skip 'data: ' and do not strip
                 # print("Received Data:", content)
             elif 'event: end' in event:
                 print("Stream ended.")

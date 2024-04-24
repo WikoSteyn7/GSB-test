@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 import os
 from typing import Any, Sequence
 import urllib.parse
@@ -21,7 +22,8 @@ class CompareWorkWithWeb(Approach):
     Only explain the differences between the two sources and nothing else. Do not provide personal opinions or assumptions.
     Only answer in the language {query_term_language}.
     If you cannot find answer in below sources, respond with I am not sure. Do not provide personal opinions or assumptions.
-
+    Use HTML to format the response into paragraphs, lists, and tables.
+    List items should have their own line, do not use - or * to denote a list, use <ul> and <li> tags.
     {follow_up_questions_prompt}
     """
 
@@ -69,17 +71,37 @@ class CompareWorkWithWeb(Approach):
         """
         # Step 1: Call bing Search Approach for a Bing LLM Response and Citations
         chat_bing_search = ChatWebRetrieveRead(self.model_name, self.chatgpt_deployment, self.query_term_language, self.bing_search_endpoint, self.bing_search_key, self.bing_safe_search)
-        bing_search_response = await chat_bing_search.run(history, overrides, {}, thought_chain)
-        self.web_citations = bing_search_response.get("web_citation_lookup")
+        #bing_search_response = await chat_bing_search.run(history, overrides, {}, thought_chain)
+        #self.web_citations = bing_search_response.get("web_citation_lookup")
+        wrr_response = chat_bing_search.run(history, overrides, {}, thought_chain)
+        content = ""
+        async for event in wrr_response:
+             # Splitting on '\n' to separate the headers from data but not stripping all whitespace
+            parts = event.split('\n')
+            header = parts[0]
+            data = '\n'.join(parts[1:]).rstrip('\n')  # Only strip the trailing newlines
 
+            if 'event: startup' in event:
+                startupData = json.loads(event.split('\n')[1].split('data: ')[1])
+                # print("Startup Data:", json_data)
+            elif 'data:' in header and 'event: end' not in header:
+                # Output data, preserving internal whitespace
+                content += event[6:].replace('\n\n', '')  # Skip 'data: ' and do not strip
+            elif 'event: end' in event:
+                print("Stream ended.")
+                wrr_response.aclose()
+
+        self.web_citations = startupData.get("web_citation_lookup")
         user_query = history[-1].get("user")
         rag_answer=next((obj['bot'] for obj in reversed(history) if 'bot' in obj), None)
+        thought_chain["work_response"] = rag_answer
+        thought_chain["web_response"] = content
         user_persona = overrides.get("user_persona", "")
         system_persona = overrides.get("system_persona", "")
         response_length = int(overrides.get("response_length") or 1024)
 
         # Step 2: Contruct the comparative system message with passed Rag response and Bing Search Response from above approach
-        bing_compare_query = user_query + "Work internal documents:\n" + rag_answer + "\n\n" + " Web search results:\n" + bing_search_response.get("answer") + "\n\n"
+        bing_compare_query = user_query + "Work internal documents:\n" + rag_answer + "\n\n" + " Web search results:\n" + content + "\n\n"
         thought_chain["work_to_web_compairison_query"] = bing_compare_query
         messages = self.get_messages_builder(
             self.COMPARATIVE_SYSTEM_MESSAGE_CHAT_CONVERSATION.format(
@@ -99,23 +121,50 @@ class CompareWorkWithWeb(Approach):
         msg_to_display = '\n\n'.join([str(message) for message in messages])
 
         # Step 3: Final comparative analysis using OpenAI Chat Completion
-        compare_resp = await self.make_chat_completion(messages)
+        #compare_resp = await self.make_chat_completion(messages)
 
-        final_response = f"{urllib.parse.unquote(compare_resp)}"
-
-        # Step 4: Append web citations from the Bing Search approach
-        for idx, url in enumerate(self.web_citations.keys(), start=1):
-            final_response += f" [url{idx}]"
-        thought_chain["work_to_web_compairison_response"] = final_response
+        #final_response = f"{urllib.parse.unquote(compare_resp)}"
         
-        return {
+        chat_completion = await openai.ChatCompletion.acreate(
+            deployment_id=self.chatgpt_deployment,
+            model=self.model_name,
+            messages=messages,
+            temperature=float(overrides.get("response_temp")) or 0.6,
+            max_tokens=1024,
+            n=1,
+            stream=True
+        )
+        
+        initial_data = {
             "data_points": None,
-            "answer": f"{urllib.parse.unquote(final_response)}",
-            "thoughts": "Searched for:<br>A Comparitive Analysis<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
+            "thoughts": "Searched for:<br>A Comparative Analysis<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
             "thought_chain": thought_chain,
             "work_citation_lookup": work_citation_lookup,
             "web_citation_lookup": self.web_citations
         }
+        yield f"event: startup\ndata: {json.dumps(initial_data)}\n\n"
+        
+        # STEP 4: Format the response
+        async for chunk in chat_completion:
+            # Check if there is at least one element and the first element has the key 'delta'
+            if chunk.choices and isinstance(chunk.choices[0], dict) and 'content' in chunk.choices[0].delta:
+                yield f"data: {chunk.choices[0].delta.content}\n\n"
+
+        # Step 4: Append web citations from the Bing Search approach
+        for idx, url in enumerate(self.web_citations.keys(), start=1):
+            yield f"data: [url{idx}]\n\n"
+            
+        yield (f'event: end\ndata: Stream ended\n\n')
+        #thought_chain["work_to_web_compairison_response"] = final_response
+        
+        #return {
+        #    "data_points": None,
+        #    "answer": f"{urllib.parse.unquote(final_response)}",
+        #    "thoughts": "Searched for:<br>A Comparitive Analysis<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
+        #    "thought_chain": thought_chain,
+        #    "work_citation_lookup": work_citation_lookup,
+        #    "web_citation_lookup": self.web_citations
+        #}
 
     async def make_chat_completion(self, messages):
         """

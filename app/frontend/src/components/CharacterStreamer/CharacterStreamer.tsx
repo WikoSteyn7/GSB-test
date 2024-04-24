@@ -13,7 +13,8 @@ const CharacterStreamer = ({ finalAnswer, eventSource, nonEventString, onStreami
   const [answer, setAnswer] = useState<ChatResponse>();
   const [startUpData, setStartUpData] = useState({ data_points: [], web_citation_lookup: {}, work_citation_lookup: {}, thought_chain: {} });
   const isEndEventTriggered = useRef(false);
-
+  const isLoading = useRef(true);
+  const [dots, setDots] = useState('');
 
   const checkAndFinalizeAnswer = () => {
     //console.log('Checking final conditions', {
@@ -38,6 +39,14 @@ const CharacterStreamer = ({ finalAnswer, eventSource, nonEventString, onStreami
         }
     }
   };
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setDots(prevDots => (prevDots.length < 3 ? prevDots + '.' : ''));
+    }, 500); // Change dot every 500ms
+
+    return () => clearInterval(intervalId); // Cleanup interval on component unmount
+  }, [isLoading.current]);
 
   useEffect(() => {
     // checkAndFinalizeAnswer();
@@ -68,6 +77,7 @@ const CharacterStreamer = ({ finalAnswer, eventSource, nonEventString, onStreami
         if (!processingRef.current) {
             processQueue();
         }
+        isLoading.current = false;
     };
 
     const handleStartup = (event: MessageEvent) => {
@@ -115,12 +125,16 @@ const CharacterStreamer = ({ finalAnswer, eventSource, nonEventString, onStreami
         });
       } else {
         processingRef.current = false;
+        isLoading.current = true;
         checkAndFinalizeAnswer();
         clearInterval(intervalId);
       }
     }, typingSpeed); // Adjust based on desired "typing" speed
   };
 
+  if (isLoading.current && !output) {
+    return <div className={classNames}>Generating Response{dots}</div>;
+  }
   return <div className={classNames}><ReactMarkdown children={output} rehypePlugins={[rehypeRaw, rehypeSanitize]}></ReactMarkdown></div>;
 };
 
