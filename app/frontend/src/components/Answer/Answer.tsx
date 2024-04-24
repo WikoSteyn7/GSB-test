@@ -228,7 +228,9 @@ export const Answer = ({
                 <div className={styles.raiwarning}>AI-generated content may be incorrect</div>
             </Stack.Item>
             <Stack.Item align="center">
+                {parsedAnswer.answerHtml && 
                 <RAIPanel approach={answer.approach} chatMode={chatMode} onAdjustClick={onAdjustClick} onRegenerateClick={onRegenerateClick} onWebSearchClicked={onWebSearchClicked} onWebCompareClicked={onWebCompareClicked} onRagCompareClicked={onRagCompareClicked} onRagSearchClicked={onRagSearchClicked} />
+                }
             </Stack.Item>
         </Stack>
     );
