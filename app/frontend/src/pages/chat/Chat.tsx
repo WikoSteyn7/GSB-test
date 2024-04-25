@@ -233,6 +233,7 @@ const Chat = () => {
 
     const onChatModeChange = (_ev: any) => {
         const chatMode = _ev.target.value as ChatMode || ChatMode.WorkOnly;
+        answerEventSource?.close();
         setChatMode(chatMode);
         if (chatMode == ChatMode.WorkOnly)
                 setDefaultApproach(Approaches.ReadRetrieveRead);
