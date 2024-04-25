@@ -41,6 +41,20 @@ const CharacterStreamer = ({ finalAnswer, eventSource, nonEventString, onStreami
   };
 
   useEffect(() => {
+    // Close our event when the user attempts refresh or leaves the page
+    const handleBeforeUnload = () => {
+        eventSource?.close();
+      };
+  
+      window.addEventListener('beforeunload', handleBeforeUnload);
+  
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      };
+
+}, []);
+
+  useEffect(() => {
     const intervalId = setInterval(() => {
       setDots(prevDots => (prevDots.length < 3 ? prevDots + '.' : ''));
     }, 500); // Change dot every 500ms
