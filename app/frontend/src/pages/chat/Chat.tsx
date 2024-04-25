@@ -323,6 +323,11 @@ const Chat = () => {
         });
     }
 
+    const removeAnswerAtIndex = (index: number) => {
+        const newItems = answers.filter((item, idx) => idx !== index);
+        setAnswers(newItems);
+    }
+
     return (
         <div className={styles.container}>
             <div className={styles.subHeader}>
@@ -381,6 +386,7 @@ const Chat = () => {
                                         <Answer
                                             key={index}
                                             answer={answer[1]}
+                                            setError={(error) => {setError(error); removeAnswerAtIndex(index); }}
                                             answerEventSource={answerEventSource}
                                             setAnswer={(response) => updateAnswerAtIndex(index, response)}
                                             isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
@@ -400,17 +406,6 @@ const Chat = () => {
                                     </div>
                                 </div>
                             ))}
-                            {isLoading && (
-                                <>
-                                    <UserChatMessage
-                                        message={lastQuestionRef.current}
-                                        approach={activeApproach}
-                                    />
-                                    <div className={styles.chatMessageGptMinWidth}>
-                                        <AnswerLoading approach={activeApproach}/>
-                                    </div>
-                                </>
-                            )}
                             {error ? (
                                 <>
                                     <UserChatMessage message={lastQuestionRef.current} approach={activeApproach}/>

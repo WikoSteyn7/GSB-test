@@ -137,45 +137,37 @@ class ChatWebRetrieveRead(Approach):
              max_tokens=4097 - 500
          )
         
+        try:
+            chat_completion = await openai.ChatCompletion.acreate(
+                deployment_id=self.chatgpt_deployment,
+                model=self.model_name,
+                messages=messages,
+                temperature=float(overrides.get("response_temp")) or 0.6,
+                max_tokens=1024,
+                n=1,
+                stream=True
+            )
         
-        chat_completion = await openai.ChatCompletion.acreate(
-            deployment_id=self.chatgpt_deployment,
-            model=self.model_name,
-            messages=messages,
-            temperature=float(overrides.get("response_temp")) or 0.6,
-            max_tokens=1024,
-            n=1,
-            stream=True
-        )
+            initial_data = {
+                "data_points": None,
+                # "thoughts": f"Searched for:<br>{generated_query}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
+                "thought_chain": thought_chain,
+                "work_citation_lookup": {},
+                "web_citation_lookup": self.citations
+            }
+            yield f"event: startup\ndata: {json.dumps(initial_data)}\n\n"
         
-        initial_data = {
-            "data_points": None,
-            # "thoughts": f"Searched for:<br>{generated_query}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
-            "thought_chain": thought_chain,
-            "work_citation_lookup": {},
-            "web_citation_lookup": self.citations
-        }
-        yield f"event: startup\ndata: {json.dumps(initial_data)}\n\n"
+            # STEP 4: Format the response
+            async for chunk in chat_completion:
+                # Check if there is at least one element and the first element has the key 'delta'
+                if chunk.choices and isinstance(chunk.choices[0], dict) and 'content' in chunk.choices[0].delta:
+                    yield f"data: {chunk.choices[0].delta.content}\n\n"
+                    
+            yield (f'event: end\ndata: Stream ended\n\n')
+        except Exception as e:
+            yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
+            raise Exception('Error in Web:', 500)        
         
-        # STEP 4: Format the response
-        async for chunk in chat_completion:
-            # Check if there is at least one element and the first element has the key 'delta'
-            if chunk.choices and isinstance(chunk.choices[0], dict) and 'content' in chunk.choices[0].delta:
-                yield f"data: {chunk.choices[0].delta.content}\n\n"
-                
-        yield (f'event: end\ndata: Stream ended\n\n')
-        #msg_to_display = '\n\n'.join([str(message) for message in messages])
-        # STEP 3: Use the search results to answer the user's question
-        #resp = await self.make_chat_completion(messages)  
-        #thought_chain["web_response"] = resp
-        #return {
-        #    "data_points": None,
-        #    "answer": f"{urllib.parse.unquote(resp)}",
-        #    "thoughts": f"Searched for:<br>{query_resp}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
-        #    "thought_chain": thought_chain,
-        #    "work_citation_lookup": {},
-        #    "web_citation_lookup": self.citations
-        #}
     
 
     async def web_search_with_safe_search(self, user_query):

@@ -33,6 +33,7 @@ interface Props {
     onAdjustClick?: () => void;
     onRegenerateClick?: () => void;
     setAnswer: (response: ChatResponse) => void;
+    setError: (error: string) => void;
     chatMode: ChatMode;
 }
 
@@ -52,6 +53,7 @@ export const Answer = ({
     onAdjustClick,
     onRegenerateClick,
     setAnswer,
+    setError,
     chatMode
 }: Props) => {
     const [finalAnswer, setFinalAnswer] = useState<ChatResponse>(answer);
@@ -108,7 +110,7 @@ export const Answer = ({
                 }
                 
                {answer.answer && <div className={answer.approach == Approaches.GPTDirect ? styles.answerTextUngrounded : styles.answerText}><ReactMarkdown children={parsedAnswer.answerHtml} rehypePlugins={[rehypeRaw, rehypeSanitize]}></ReactMarkdown></div>}
-               {!answer.answer && <CharacterStreamer approach={answer.approach} finalAnswer={(data) => {setAnswer(data)}} classNames={answer.approach == Approaches.GPTDirect ? styles.answerTextUngrounded : styles.answerText} typingSpeed={5} eventSource={answerEventSource} onStreamingComplete={handleCloseEvent} />}
+               {!answer.answer && <CharacterStreamer approach={answer.approach} finalAnswer={setAnswer} setError={setError} classNames={answer.approach == Approaches.GPTDirect ? styles.answerTextUngrounded : styles.answerText} typingSpeed={5} eventSource={answerEventSource} onStreamingComplete={handleCloseEvent} />}
             </Stack.Item>
 
             {(parsedAnswer.approach == Approaches.ChatWebRetrieveRead && !!parsedAnswer.web_citations.length) && (

@@ -166,16 +166,18 @@ class ChatReadRetrieveReadApproach(Approach):
             self.QUERY_PROMPT_FEW_SHOTS,
             self.chatgpt_token_limit - len(user_question)
             )
-
-        chat_completion = await openai.ChatCompletion.acreate(
-            deployment_id=self.chatgpt_deployment,
-            model=self.model_name,
-            messages=messages,
-            temperature=0.0,
-            # max_tokens=32, # setting it too low may cause malformed JSON
-            max_tokens=100,
-            n=1)
-
+        try:
+            chat_completion = await openai.ChatCompletion.acreate(
+                deployment_id=self.chatgpt_deployment,
+                model=self.model_name,
+                messages=messages,
+                temperature=0.0,
+                # max_tokens=32, # setting it too low may cause malformed JSON
+                max_tokens=100,
+                n=1)
+        except Exception as e:
+            yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
+            
         generated_query = chat_completion.choices[0].message.content
         
         #if we fail to generate a query, return the last user question
@@ -190,15 +192,16 @@ class ChatReadRetrieveReadApproach(Approach):
                 'Accept': 'application/json',  
                 'Content-Type': 'application/json',
             }
-
-        response = requests.post(url, json=data,headers=headers,timeout=60)
-        if response.status_code == 200:
-            response_data = response.json()
-            embedded_query_vector =response_data.get('data')          
-        else:
-            log.error(f"Error generating embedding:: {response.status_code}")
-            raise Exception('Error generating embedding:', response.status_code)
-
+        embedded_query_vector = list[float]
+        try:
+            response = requests.post(url, json=data,headers=headers,timeout=60)
+            if response.status_code == 200:
+                response_data = response.json()
+                embedded_query_vector =response_data.get('data')          
+        except Exception as e:
+            yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
+            raise Exception('Error generating embedding:', 500)
+        
         #vector set up for pure vector search & Hybrid search & Hybrid semantic
         vector = RawVectorQuery(vector=embedded_query_vector, k=top, fields="contentVector")
 
@@ -322,17 +325,50 @@ class ChatReadRetrieveReadApproach(Approach):
                 userPersona=user_persona,
                 systemPersona=system_persona,
             )
-        # STEP 3: Generate a contextual and content-specific answer using the search results and chat history.
-        #Added conditional block to use different system messages for different models.
-        if self.model_name.startswith("gpt-35-turbo"):
-            messages = self.get_messages_from_history(
-                system_message,
-                self.model_name,
-                history,
-                history[-1]["user"] + "Sources:\n" + content + "\n\n", # 3.5 has recency Bias that is why this is here
-                self.RESPONSE_PROMPT_FEW_SHOTS,
-                max_tokens=self.chatgpt_token_limit - 500
+            
+        try:
+            # STEP 3: Generate a contextual and content-specific answer using the search results and chat history.
+            #Added conditional block to use different system messages for different models.
+            if self.model_name.startswith("gpt-35-turbo"):
+                messages = self.get_messages_from_history(
+                    system_message,
+                    self.model_name,
+                     history,
+                    history[-1]["user"] + "Sources:\n" + content + "\n\n", # 3.5 has recency Bias that is why this is here
+                    self.RESPONSE_PROMPT_FEW_SHOTS,
+                    max_tokens=self.chatgpt_token_limit - 500
+                )
+
+                #Uncomment to debug token usage.
+                #print(messages)
+                #message_string = ""
+                #for message in messages:
+                #    # enumerate the messages and add the role and content elements of the dictoinary to the message_string
+                #    message_string += f"{message['role']}: {message['content']}\n"
+                #print("Content Tokens: ", self.num_tokens_from_string("Sources:\n" + content + "\n\n", "cl100k_base"))
+                #print("System Message Tokens: ", self.num_tokens_from_string(system_message, "cl100k_base"))
+                #print("Few Shot Tokens: ", self.num_tokens_from_string(self.response_prompt_few_shots[0]['content'], "cl100k_base"))
+                #print("Message Tokens: ", self.num_tokens_from_string(message_string, "cl100k_base"))
+                chat_completion = await openai.ChatCompletion.acreate(
+                deployment_id=self.chatgpt_deployment,
+                model=self.model_name,
+                messages=messages,
+                temperature=float(overrides.get("response_temp")) or 0.6,
+                n=1,
+                stream=True
             )
+
+            elif self.model_name.startswith("gpt-4"):
+                messages = self.get_messages_from_history(
+                    system_message,
+                    # "Sources:\n" + content + "\n\n" + system_message,
+                    self.model_name,
+                    history,
+                    # history[-1]["user"],
+                    history[-1]["user"] + "Sources:\n" + content + "\n\n", # GPT 4 starts to degrade with long system messages. so moving sources here 
+                    self.RESPONSE_PROMPT_FEW_SHOTS,
+                    max_tokens=self.chatgpt_token_limit
+                )
 
             #Uncomment to debug token usage.
             #print(messages)
@@ -344,85 +380,37 @@ class ChatReadRetrieveReadApproach(Approach):
             #print("System Message Tokens: ", self.num_tokens_from_string(system_message, "cl100k_base"))
             #print("Few Shot Tokens: ", self.num_tokens_from_string(self.response_prompt_few_shots[0]['content'], "cl100k_base"))
             #print("Message Tokens: ", self.num_tokens_from_string(message_string, "cl100k_base"))
-            chat_completion = await openai.ChatCompletion.acreate(
-            deployment_id=self.chatgpt_deployment,
-            model=self.model_name,
-            messages=messages,
-            temperature=float(overrides.get("response_temp")) or 0.6,
-            n=1,
-            stream=True
-        )
 
-        elif self.model_name.startswith("gpt-4"):
-            messages = self.get_messages_from_history(
-                system_message,
-                # "Sources:\n" + content + "\n\n" + system_message,
-                self.model_name,
-                history,
-                # history[-1]["user"],
-                history[-1]["user"] + "Sources:\n" + content + "\n\n", # GPT 4 starts to degrade with long system messages. so moving sources here 
-                self.RESPONSE_PROMPT_FEW_SHOTS,
-                max_tokens=self.chatgpt_token_limit
+                chat_completion = await openai.ChatCompletion.acreate(
+                deployment_id=self.chatgpt_deployment,
+                model=self.model_name,
+                messages=messages,
+                temperature=float(overrides.get("response_temp")) or 0.6,
+                max_tokens=1024,
+                n=1,
+                stream=True
             )
-
-            #Uncomment to debug token usage.
-            #print(messages)
-            #message_string = ""
-            #for message in messages:
-            #    # enumerate the messages and add the role and content elements of the dictoinary to the message_string
-            #    message_string += f"{message['role']}: {message['content']}\n"
-            #print("Content Tokens: ", self.num_tokens_from_string("Sources:\n" + content + "\n\n", "cl100k_base"))
-            #print("System Message Tokens: ", self.num_tokens_from_string(system_message, "cl100k_base"))
-            #print("Few Shot Tokens: ", self.num_tokens_from_string(self.response_prompt_few_shots[0]['content'], "cl100k_base"))
-            #print("Message Tokens: ", self.num_tokens_from_string(message_string, "cl100k_base"))
-
-            chat_completion = await openai.ChatCompletion.acreate(
-            deployment_id=self.chatgpt_deployment,
-            model=self.model_name,
-            messages=messages,
-            temperature=float(overrides.get("response_temp")) or 0.6,
-            max_tokens=1024,
-            n=1,
-            stream=True
-        )
         
-        initial_data = {
-            "data_points": data_points,
-            # "thoughts": f"Searched for:<br>{generated_query}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
-            "thought_chain": thought_chain,
-            "work_citation_lookup": citation_lookup,
-            "web_citation_lookup": {}
-        }
-        yield f"event: startup\ndata: {json.dumps(initial_data)}\n\n"
+            initial_data = {
+                "data_points": data_points,
+                # "thoughts": f"Searched for:<br>{generated_query}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
+                "thought_chain": thought_chain,
+                "work_citation_lookup": citation_lookup,
+                "web_citation_lookup": {}
+            }
+            yield f"event: startup\ndata: {json.dumps(initial_data)}\n\n"
         
-        # STEP 4: Format the response
-        async for chunk in chat_completion:
-            # Check if there is at least one element and the first element has the key 'delta'
-            if chunk.choices and isinstance(chunk.choices[0], dict) and 'content' in chunk.choices[0].delta:
-                yield f"data: {chunk.choices[0].delta.content}\n\n"
+            # STEP 4: Format the response
+            async for chunk in chat_completion:
+                # Check if there is at least one element and the first element has the key 'delta'
+                if chunk.choices and isinstance(chunk.choices[0], dict) and 'content' in chunk.choices[0].delta:
+                    yield f"data: {chunk.choices[0].delta.content}\n\n"
                 
-        yield (f'event: end\ndata: Stream ended\n\n')
-        #msg_to_display = '\n\n'.join([str(message) for message in messages])
-        #generated_response=chat_completion.choices[0].message.content
-
-        # Detect the language of the response
-        #response_language = self.detect_language(generated_response)
-        # if response is not in user's language, translate it to user's language
-        #if response_language != detectedlanguage:
-        #    translated_response = self.translate_response(generated_response, detectedlanguage)
-        #else:
-        #    translated_response = generated_response
-        #thought_chain["work_response"] = urllib.parse.unquote(translated_response)
-        
-        #return {
-        #    "data_points": data_points,
-        #    "answer": f"{urllib.parse.unquote(translated_response)}",
-        #    "thoughts": f"Searched for:<br>{generated_query}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
-        #    "thought_chain": thought_chain,
-        #    "work_citation_lookup": citation_lookup,
-        #    "web_citation_lookup": {}
-        #}
-
+            yield (f'event: end\ndata: Stream ended\n\n')
+        except Exception as e:
+            yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
+            
+            
     def detect_language(self, text: str) -> str:
         """ Function to detect the language of the text"""
         try:

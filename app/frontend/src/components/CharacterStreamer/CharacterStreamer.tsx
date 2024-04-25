@@ -5,16 +5,16 @@ import rehypeSanitize from 'rehype-sanitize';
 import rehypeRaw from 'rehype-raw';
 import { Approaches, ChatResponse } from "../../api";
 
-const CharacterStreamer = ({ finalAnswer, eventSource, nonEventString, onStreamingComplete, classNames, approach = Approaches.ChatWebRetrieveRead, typingSpeed = 30 }: 
-  { finalAnswer?: (data: ChatResponse) => void; approach?: Approaches, eventSource?: any; nonEventString?: string, onStreamingComplete: any; classNames?: string; typingSpeed?: number }) => {
+const CharacterStreamer = ({ finalAnswer, eventSource, nonEventString, onStreamingComplete, classNames, approach = Approaches.ChatWebRetrieveRead, typingSpeed = 30, setError }: 
+  { finalAnswer?: (data: ChatResponse) => void; approach?: Approaches, eventSource?: any; nonEventString?: string, onStreamingComplete: any; classNames?: string; typingSpeed?: number; setError?: (error: string) => void; }) => {
   const [output, setOutput] = useState('');
   const queueRef = useRef<string[]>([]); // Now TypeScript knows this is an array of strings
   const processingRef = useRef(false);
-  const [answer, setAnswer] = useState<ChatResponse>();
   const [startUpData, setStartUpData] = useState({ data_points: [], web_citation_lookup: {}, work_citation_lookup: {}, thought_chain: {} });
   const isEndEventTriggered = useRef(false);
   const isLoading = useRef(true);
   const [dots, setDots] = useState('');
+  const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
 
   const checkAndFinalizeAnswer = () => {
     //console.log('Checking final conditions', {
@@ -35,7 +35,7 @@ const CharacterStreamer = ({ finalAnswer, eventSource, nonEventString, onStreami
                 work_citation_lookup: startUpData.work_citation_lookup,
                 thought_chain: startUpData.thought_chain
             });
-            console.log('Final answer sent with startup data:', startUpData);
+            // console.log('Final answer sent with startup data:', startUpData);
         }
     }
   };
@@ -49,14 +49,13 @@ const CharacterStreamer = ({ finalAnswer, eventSource, nonEventString, onStreami
   }, [isLoading.current]);
 
   useEffect(() => {
-    // checkAndFinalizeAnswer();
-    console.log(startUpData);
-    // checkAndFinalizeAnswer();
-  }, [startUpData]);
-
-  useEffect(() => {
     checkAndFinalizeAnswer();
   }, [output]);
+
+  useEffect(() => {
+      chatMessageStreamEnd.current?.scrollIntoView({ behavior: "smooth" });
+    }, [output]);
+    
 
   useEffect(() => {
     if (!eventSource && nonEventString) {
@@ -99,7 +98,19 @@ const CharacterStreamer = ({ finalAnswer, eventSource, nonEventString, onStreami
       }
     };
 
+    const handleError = (event: MessageEvent) => {
+      if (setError){
+        try {
+          setError(JSON.parse(event.data).error);
+        } catch (e) {
+          setError(event.data); // If it's not JSON, just set the error message
+        }
+        eventSource.close();
+      }
+    }
+
     if (eventSource) {
+      eventSource.addEventListener('error', handleError);
       eventSource.addEventListener('startup', handleStartup);
       eventSource.addEventListener('message', handleMessage);
       eventSource.addEventListener('end', handleEnd);
@@ -107,6 +118,7 @@ const CharacterStreamer = ({ finalAnswer, eventSource, nonEventString, onStreami
 
     return () => {
       if (eventSource) {
+        eventSource.removeEventListener('error', handleError);
         eventSource.removeEventListener('startup', handleStartup);
         eventSource.removeEventListener('message', handleMessage);
         eventSource.removeEventListener('end', handleEnd);
@@ -133,9 +145,13 @@ const CharacterStreamer = ({ finalAnswer, eventSource, nonEventString, onStreami
   };
 
   if (isLoading.current && !output) {
-    return <div className={classNames}>Generating Response{dots}</div>;
+    return <div className={classNames}>Generating Answer{dots}</div>;
   }
-  return <div className={classNames}><ReactMarkdown children={output} rehypePlugins={[rehypeRaw, rehypeSanitize]}></ReactMarkdown></div>;
+
+  return <div className={classNames}><ReactMarkdown children={output} rehypePlugins={[rehypeRaw, rehypeSanitize]}></ReactMarkdown>
+   <div ref={chatMessageStreamEnd} />
+  </div>;
+
 };
 
 export default CharacterStreamer;

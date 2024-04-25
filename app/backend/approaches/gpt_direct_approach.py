@@ -130,21 +130,26 @@ class GPTDirectApproach(Approach):
             max_tokens=self.chatgpt_token_limit - 500
         )
 
-        chat_completion = await openai.ChatCompletion.acreate(
-            deployment_id=self.chatgpt_deployment,
-            model=self.model_name,
-            messages=messages,
-            temperature=float(overrides.get("response_temp")) or 0.6,
-            n=1,
-            stream=True
-        )  
-        # STEP 4: Format the response
-        async for chunk in chat_completion:
-            # Check if there is at least one element and the first element has the key 'delta'
-            if chunk.choices and isinstance(chunk.choices[0], dict) and 'content' in chunk.choices[0].delta:
-                yield f"data: {chunk.choices[0].delta.content}\n\n"
+        try:
+            chat_completion = await openai.ChatCompletion.acreate(
+                deployment_id=self.chatgpt_deployment,
+                model=self.model_name,
+                messages=messages,
+                temperature=float(overrides.get("response_temp")) or 0.6,
+                n=1,
+                stream=True
+            )  
+            # STEP 4: Format the response
+            async for chunk in chat_completion:
+                # Check if there is at least one element and the first element has the key 'delta'
+                if chunk.choices and isinstance(chunk.choices[0], dict) and 'content' in chunk.choices[0].delta:
+                    yield f"data: {chunk.choices[0].delta.content}\n\n"
                 
-        yield (f'event: end\ndata: Stream ended\n\n')
+            yield (f'event: end\ndata: Stream ended\n\n')
+        except Exception as e:
+            yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
+            raise Exception('Error in Direct Approach:', 500)   
+        
         
         #Format the response
         #msg_to_display = '\n\n'.join([str(message) for message in messages])
