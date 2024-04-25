@@ -121,9 +121,6 @@ class CompareWorkWithWeb(Approach):
         msg_to_display = '\n\n'.join([str(message) for message in messages])
 
         # Step 3: Final comparative analysis using OpenAI Chat Completion
-        #compare_resp = await self.make_chat_completion(messages)
-
-        #final_response = f"{urllib.parse.unquote(compare_resp)}"
         
         chat_completion = await openai.ChatCompletion.acreate(
             deployment_id=self.chatgpt_deployment,
@@ -155,17 +152,7 @@ class CompareWorkWithWeb(Approach):
             yield f"data: [url{idx}]\n\n"
             
         yield (f'event: end\ndata: Stream ended\n\n')
-        #thought_chain["work_to_web_compairison_response"] = final_response
         
-        #return {
-        #    "data_points": None,
-        #    "answer": f"{urllib.parse.unquote(final_response)}",
-        #    "thoughts": "Searched for:<br>A Comparitive Analysis<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
-        #    "thought_chain": thought_chain,
-        #    "work_citation_lookup": work_citation_lookup,
-        #    "web_citation_lookup": self.web_citations
-        #}
-
     async def make_chat_completion(self, messages):
         """
         Generates a chat completion response using the chat-based language model.

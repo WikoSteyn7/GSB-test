@@ -197,14 +197,6 @@ class CompareWebWithWork(Approach):
         
         yield (f'event: end\ndata: Stream ended\n\n')
         
-        #return {
-        #    "data_points": None,
-        #    "answer": f"{urllib.parse.unquote(final_response)}",
-        #    "thoughts": "Searched for:<br>A Comparitive Analysis<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
-        #    "thought_chain": thought_chain,thought_chain["work_response"]
-        #    "work_citation_lookup": work_citations,
-        #    "web_citation_lookup": web_citation_lookup
-        #}
     
     async def make_chat_completion(self, messages) -> str:
         """
