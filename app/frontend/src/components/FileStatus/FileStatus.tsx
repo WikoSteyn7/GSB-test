@@ -23,7 +23,7 @@ const dropdownTimespanOptions = [
     { key: '24hours', text: '24 hours' },
     { key: '7days', text: '7 days' },
     { key: '30days', text: '30 days' },
-    { key: '-1days', text: 'All' },
+    { key: '-1days', text: 'All' }
   ];
 
 const dropdownFileStateOptions = [
@@ -79,7 +79,7 @@ export const FileStatus = ({ className }: Props) => {
 
     const onGetStatusClick = async () => {
         setIsLoading(true);
-        var timeframe = 4;
+        var timeframe = -1;
         switch (selectedTimeFrameItem?.key as string) {
             case "4hours":
                 timeframe = 4;
@@ -100,7 +100,7 @@ export const FileStatus = ({ className }: Props) => {
                 timeframe = -1;
                 break;
             default:
-                timeframe = 4;
+                timeframe = -1;
                 break;
         }
 
@@ -149,6 +149,12 @@ export const FileStatus = ({ className }: Props) => {
         fetchFolders();
         fetchTags();        
     }, []);
+
+    // New useEffect for automatic refresh when the component mounts
+    useEffect(() => {
+        onGetStatusClick(); // Call the function to fetch the initial file statuses
+    }, []); // Empty dependency array ensures this runs only once when the component mounts
+
 
     function convertStatusToItems(fileList: FileUploadBasicStatus[]) {
         const items: IDocument[] = [];
@@ -201,7 +207,7 @@ export const FileStatus = ({ className }: Props) => {
             <div className={`${styles.options} ${className ?? ""}`} >
                 <Dropdown
                         label="Uploaded in last:"
-                        defaultSelectedKey='4hours'
+                        defaultSelectedKey='-1days'
                         onChange={onTimeSpanChange}
                         placeholder="Select a time range"
                         options={dropdownTimespanOptions}
