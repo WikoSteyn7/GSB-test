@@ -124,7 +124,7 @@ resource "azurerm_linux_web_app" "app_service" {
   }
 
   auth_settings_v2 {
-    auth_enabled = true
+    auth_enabled = false
     default_provider = "azureactivedirectory"
     runtime_version = "~2"
     unauthenticated_action = "RedirectToLoginPage"

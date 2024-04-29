@@ -384,7 +384,8 @@ class ChatReadRetrieveReadApproach(Approach):
             messages=messages,
             temperature=float(overrides.get("response_temp")) or 0.6,
             max_tokens=1024,
-            n=1
+            n=1,
+            
         )
         # STEP 4: Format the response
         msg_to_display = '\n\n'.join([str(message) for message in messages])
