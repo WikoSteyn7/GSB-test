@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 import os
 import re
 from typing import Any, Sequence
@@ -30,12 +31,13 @@ class ChatWebRetrieveRead(Approach):
     Reference these as [url1] and [url2] respectively in your answers.
 
     Here is how you should answer every question:
-
-    - Look for information in the provided content to answer the question in {query_term_language}.
-    - If the provided content has an answer, please respond with a citation. You must include a citation to each URL referenced only once when you find an answer in source URLs.
-    - If you cannot find an answer in the below sources, respond with "I am not sure." Do not provide personal opinions or assumptions and do not include citations.
-    - Identify the language of the user's question and translate the final response to that language. If the final answer is "I am not sure," then also translate it to the language of the user's question and display the translated response only.
-
+        
+    -Look for information in the provided content to answer the question in {query_term_language}.
+    -If the provided content has an answer, please respond with citation.You must include a citation to each url referenced only once when you find answer in source urls.      
+    -If you cannot find answer in below sources, respond with I am not sure. Do not provide personal opinions or assumptions and do not include citations.
+    -Identify the language of the user's question and translate the final response to that language.if the final answer is " I am not sure" then also translate it to the language of the user's question and then display translated response only. nothing else. 
+    -Use HTML to format the response into paragraphs, lists, and tables.
+    -List items should have their own line, do not use - or * to denote a list, use <ul> and <li> tags.
     {follow_up_questions_prompt}   
     """
 
@@ -152,18 +154,38 @@ class ChatWebRetrieveRead(Approach):
             self.RESPONSE_PROMPT_FEW_SHOTS,
              max_tokens=4097 - 500
          )
-        msg_to_display = '\n\n'.join([str(message) for message in messages])
-        # STEP 3: Use the search results to answer the user's question
-        resp = await self.make_chat_completion(messages)  
-        thought_chain["web_response"] = resp
-        return {
-            "data_points": None,
-            "answer": f"{urllib.parse.unquote(resp)}",
-            "thoughts": f"Searched for:<br>{query_resp}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
-            "thought_chain": thought_chain,
-            "work_citation_lookup": {},
-            "web_citation_lookup": self.citations
-        }
+        
+        try:
+            chat_completion = await openai.ChatCompletion.acreate(
+                deployment_id=self.chatgpt_deployment,
+                model=self.model_name,
+                messages=messages,
+                temperature=float(overrides.get("response_temp")) or 0.6,
+                max_tokens=1024,
+                n=1,
+                stream=True
+            )
+        
+            initial_data = {
+                "data_points": None,
+                # "thoughts": f"Searched for:<br>{generated_query}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
+                "thought_chain": thought_chain,
+                "work_citation_lookup": {},
+                "web_citation_lookup": self.citations
+            }
+            yield f"event: startup\ndata: {json.dumps(initial_data)}\n\n"
+        
+            # STEP 4: Format the response
+            async for chunk in chat_completion:
+                # Check if there is at least one element and the first element has the key 'delta'
+                if chunk.choices and isinstance(chunk.choices[0], dict) and 'content' in chunk.choices[0].delta:
+                    yield f"data: {chunk.choices[0].delta.content}\n\n"
+                    
+            yield (f'event: end\ndata: Stream ended\n\n')
+        except Exception as e:
+            yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
+            raise Exception('Error in Web:', 500)        
+        
     
 
     async def web_search_with_safe_search(self, user_query):

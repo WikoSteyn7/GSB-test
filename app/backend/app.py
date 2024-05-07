@@ -3,6 +3,7 @@
 from io import StringIO
 from typing import Optional
 import asyncio
+import uuid
 #from sse_starlette.sse import EventSourceResponse
 #from starlette.responses import StreamingResponse
 from starlette.responses import Response
@@ -20,7 +21,6 @@ from approaches.comparewebwithwork import CompareWebWithWork
 from approaches.compareworkwithweb import CompareWorkWithWeb
 from approaches.chatreadretrieveread import ChatReadRetrieveReadApproach
 from approaches.chatwebretrieveread import ChatWebRetrieveRead
-from approaches.gpt_direct_approach import GPTDirectApproach
 from approaches.approach import Approaches
 from azure.core.credentials import AzureKeyCredential
 from azure.identity import DefaultAzureCredential, AzureAuthorityHosts
@@ -248,16 +248,7 @@ chat_approaches = {
                                     ENV["ENRICHMENT_KEY"],
                                     ENV["AZURE_AI_TRANSLATION_DOMAIN"],
                                     str_to_bool.get(ENV["USE_SEMANTIC_RERANKER"])
-                                ),
-    Approaches.GPTDirect: GPTDirectApproach(
-                                ENV["AZURE_OPENAI_SERVICE"],
-                                ENV["AZURE_OPENAI_SERVICE_KEY"],
-                                ENV["AZURE_OPENAI_CHATGPT_DEPLOYMENT"],
-                                ENV["QUERY_TERM_LANGUAGE"],
-                                model_name,
-                                model_version,
-                                ENV["AZURE_OPENAI_ENDPOINT"]
-    )
+                                )
 }
 
 # Create API
@@ -268,11 +259,51 @@ app = FastAPI(
     docs_url="/docs",
 )
 
+# In-Memory Storage, if you need a more persistent solution consider using a database like cosmos
+sessions = {}
+
 @app.get("/", include_in_schema=False, response_class=RedirectResponse)
 async def root():
     """Redirect to the index.html page"""
     return RedirectResponse(url="/index.html")
 
+
+@app.get("/chatSession/{session_id}")
+async def chatSession(session_id: str):
+    """Get the chat session results
+
+    Args:
+        session_id (str): The session ID to retrieve the chat results
+
+    Returns:
+        dict: The chat session results
+    """
+    approach = sessions[session_id].get("approach")
+    try:
+        impl = chat_approaches.get(Approaches(int(approach)))
+        if not impl:
+            return {"error": "unknown approach"}, 400
+        
+        if (Approaches(int(approach)) == Approaches.CompareWorkWithWeb or Approaches(int(approach)) == Approaches.CompareWebWithWork):
+            r = impl.run(sessions[session_id].get("history", []), sessions[session_id].get("overrides", {}), sessions[session_id].get("citation_lookup", {}), sessions[session_id].get("thought_chain", {}))
+            return StreamingResponse(r, media_type="text/event-stream")
+        else:
+            r = impl.run(sessions[session_id].get("history", []), sessions[session_id].get("overrides", {}), {}, sessions[session_id].get("thought_chain", {}))
+            return StreamingResponse(r, media_type="text/event-stream")
+        
+        
+        #response = {
+        #        "data_points": r["data_points"],
+        #        "answer": r["answer"],
+        #        "thoughts": r["thoughts"],
+        #        "thought_chain": r["thought_chain"],
+        #        "work_citation_lookup": r["work_citation_lookup"],
+        #        "web_citation_lookup": r["web_citation_lookup"]
+        #}
+        #return response;
+    except Exception as ex:
+        log.error(f"Error in chat:: {ex}")
+        raise HTTPException(status_code=500, detail=str(ex)) from ex
 
 @app.post("/chat")
 async def chat(request: Request):
@@ -287,32 +318,29 @@ async def chat(request: Request):
     Raises:
         dict: The error response if an exception occurs during the chat
     """
-    json_body = await request.json()
-    approach = json_body.get("approach")
+    
+    session_id = str(uuid.uuid4())
+    sessions[session_id] = await request.json();
+    sessions[session_id]['date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S");
+    approach = sessions[session_id].get("approach")
     try:
         impl = chat_approaches.get(Approaches(int(approach)))
         if not impl:
             return {"error": "unknown approach"}, 400
         
-        if (Approaches(int(approach)) == Approaches.CompareWorkWithWeb or Approaches(int(approach)) == Approaches.CompareWebWithWork):
-            r = await impl.run(json_body.get("history", []), json_body.get("overrides", {}), json_body.get("citation_lookup", {}), json_body.get("thought_chain", {}))
-        else:
-            r = await impl.run(json_body.get("history", []), json_body.get("overrides", {}), {}, json_body.get("thought_chain", {}))
-       
-        response = {
-                "data_points": r["data_points"],
-                "answer": r["answer"],
-                "thoughts": r["thoughts"],
-                "thought_chain": r["thought_chain"],
-                "work_citation_lookup": r["work_citation_lookup"],
-                "web_citation_lookup": r["web_citation_lookup"]
-        }
-
-        return response
-
+        result = impl.run(sessions[session_id].get("history", []), sessions[session_id].get("overrides", {}), {}, sessions[session_id].get("thought_chain", {}))
+        print(result)
+        return StreamingResponse(result, media_type="text/event-stream")
+        
     except Exception as ex:
         log.error(f"Error in chat:: {ex}")
         raise HTTPException(status_code=500, detail=str(ex)) from ex
+        
+
+
+    #except Exception as ex:
+    #    log.error(f"Error in chat:: {ex}")
+    #    raise HTTPException(status_code=500, detail=str(ex)) from ex
 
 
     
@@ -369,7 +397,7 @@ async def get_all_upload_status(request: Request):
             os.environ["AZURE_BLOB_STORAGE_UPLOAD_CONTAINER"])
 
         # retrieve tags for each file
-         # Initialize an empty list to hold the tags
+        # Initialize an empty list to hold the tags
         items = []              
         cosmos_client = CosmosClient(url=statusLog._url, credential=statusLog._key)
         database = cosmos_client.get_database_client(statusLog._database_name)

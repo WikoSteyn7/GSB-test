@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 import re
 import logging
 import urllib.parse
@@ -21,8 +22,9 @@ from azure.storage.blob import (
     generate_account_sas,
 )
 from text import nonewlines
-from core.modelhelper import get_token_limit
+from core.modelhelper import get_token_limit, num_tokens_from_messages
 import requests
+import tiktoken
 
 class ChatReadRetrieveReadApproach(Approach):
     """Approach that uses a simple retrieve-then-read implementation, using the Azure AI Search and
@@ -50,7 +52,8 @@ class ChatReadRetrieveReadApproach(Approach):
     -If the source document has an answer, please respond with citation.You must include a citation to each document referenced only once when you find answer in source documents.      
     -If you cannot find answer in below sources, respond with I am not sure.Do not provide personal opinions or assumptions and do not include citations.
     -Identify the language of the user's question and translate the final response to that language.if the final answer is " I am not sure" then also translate it to the language of the user's question and then display translated response only. nothing else.
-
+    -Use HTML to format the response into paragraphs, lists, and tables.
+    -List items should have their own line, do not use - or * to denote a list, use <ul> and <li> tags.
     {follow_up_questions_prompt}
     {injected_prompt}
     """
@@ -207,15 +210,16 @@ class ChatReadRetrieveReadApproach(Approach):
                 'Accept': 'application/json',  
                 'Content-Type': 'application/json',
             }
-
-        response = requests.post(url, json=data,headers=headers,timeout=60)
-        if response.status_code == 200:
-            response_data = response.json()
-            embedded_query_vector =response_data.get('data')          
-        else:
-            log.error(f"Error generating embedding:: {response.status_code}")
-            raise Exception('Error generating embedding:', response.status_code)
-
+        embedded_query_vector = list[float]
+        try:
+            response = requests.post(url, json=data,headers=headers,timeout=60)
+            if response.status_code == 200:
+                response_data = response.json()
+                embedded_query_vector =response_data.get('data')          
+        except Exception as e:
+            yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
+            raise Exception('Error generating embedding:', 500)
+        
         #vector set up for pure vector search & Hybrid search & Hybrid semantic
         vector = RawVectorQuery(vector=embedded_query_vector, k=top, fields="contentVector")
 
@@ -339,90 +343,127 @@ class ChatReadRetrieveReadApproach(Approach):
                 userPersona=user_persona,
                 systemPersona=system_persona,
             )
-        # STEP 3: Generate a contextual and content-specific answer using the search results and chat history.
-        #Added conditional block to use different system messages for different models.
-        if self.model_name.startswith("gpt-35-turbo"):
-            messages = self.get_messages_from_history(
-                system_message,
-                self.model_name,
-                history,
-                history[-1]["user"] + "Sources:\n" + content + "\n\n", # 3.5 has recency Bias that is why this is here
-                self.RESPONSE_PROMPT_FEW_SHOTS,
-                max_tokens=self.chatgpt_token_limit - 500
+            
+        user_query_tokens = num_tokens_from_messages({"role": "user", "content": user_q}, self.model_name)
+        sytem_prompt_tokens=num_tokens_from_messages({"role": "user", "content": system_message}, self.model_name)
+        content_tokens= num_tokens_from_messages({"role": "user", "content": content}, self.model_name) 
+        history_content = " ".join([msg["content"] for msg in history[:-1]])             
+        history_tokens= num_tokens_from_messages({"role": "user", "content": history_content}, self.model_name)
+
+            
+        try:
+            # STEP 3: Generate a contextual and content-specific answer using the search results and chat history.
+            #Added conditional block to use different system messages for different models.
+            if self.model_name.startswith("gpt-35-turbo"):
+                messages = self.get_messages_from_history(
+                    system_message,
+                    self.model_name,
+                     history,
+                    history[-1]["user"] + "Sources:\n" + content + "\n\n", # 3.5 has recency Bias that is why this is here
+                    self.RESPONSE_PROMPT_FEW_SHOTS,
+                    max_tokens=self.chatgpt_token_limit - 500
+                )
+                
+            
+
+                #Uncomment to debug token usage.
+                #print(messages)
+                #message_string = ""
+                #for message in messages:
+                #    # enumerate the messages and add the role and content elements of the dictoinary to the message_string
+                #    message_string += f"{message['role']}: {message['content']}\n"
+
+                
+                
+              
+                chat_completion= await self.client.chat.completions.create(
+                model=self.chatgpt_deployment,
+                messages=messages,
+                temperature=float(overrides.get("response_temp")) or 0.6,
+                n=1,
+                stream=True
+                )
+
+            elif self.model_name.startswith("gpt-4"):
+                messages = self.get_messages_from_history(
+                    system_message,
+                    # "Sources:\n" + content + "\n\n" + system_message,
+                    self.model_name,
+                    history,
+                    # history[-1]["user"],
+                    history[-1]["user"] + "Sources:\n" + content + "\n\n", # GPT 4 starts to degrade with long system messages. so moving sources here 
+                    self.RESPONSE_PROMPT_FEW_SHOTS,
+                    max_tokens=self.chatgpt_token_limit
+                )
+
+                #Uncomment to debug token usage.
+                #print(messages)
+                #message_string = ""
+                #for message in messages:
+                #    # enumerate the messages and add the role and content elements of the dictoinary to the message_string
+                #    message_string += f"{message['role']}: {message['content']}\n"
+                #print("Content Tokens: ", self.num_tokens_from_string("Sources:\n" + content + "\n\n", "cl100k_base"))
+                #print("System Message Tokens: ", self.num_tokens_from_string(system_message, "cl100k_base"))
+                #print("Few Shot Tokens: ", self.num_tokens_from_string(self.response_prompt_few_shots[0]['content'], "cl100k_base"))
+                #print("Message Tokens: ", self.num_tokens_from_string(message_string, "cl100k_base"))
+                print(messages)
+                
+                chat_completion= await self.client.chat.completions.create(
+                model=self.chatgpt_deployment,
+                messages=messages,
+                temperature=float(overrides.get("response_temp")) or 0.6,
+                max_tokens=1024,
+                n=1,
+                stream=True
+                
             )
-
-            #Uncomment to debug token usage.
-            #print(messages)
-            #message_string = ""
-            #for message in messages:
-            #    # enumerate the messages and add the role and content elements of the dictoinary to the message_string
-            #    message_string += f"{message['role']}: {message['content']}\n"
-            #print("Content Tokens: ", self.num_tokens_from_string("Sources:\n" + content + "\n\n", "cl100k_base"))
-            #print("System Message Tokens: ", self.num_tokens_from_string(system_message, "cl100k_base"))
-            #print("Few Shot Tokens: ", self.num_tokens_from_string(self.response_prompt_few_shots[0]['content'], "cl100k_base"))
-            #print("Message Tokens: ", self.num_tokens_from_string(message_string, "cl100k_base"))
-            
-            chat_completion= await self.client.chat.completions.create(
-            model=self.chatgpt_deployment,
-            messages=messages,
-            temperature=float(overrides.get("response_temp")) or 0.6,
-            n=1
-        )
-
-        elif self.model_name.startswith("gpt-4"):
-            messages = self.get_messages_from_history(
-                system_message,
-                # "Sources:\n" + content + "\n\n" + system_message,
-                self.model_name,
-                history,
-                # history[-1]["user"],
-                history[-1]["user"] + "Sources:\n" + content + "\n\n", # GPT 4 starts to degrade with long system messages. so moving sources here 
-                self.RESPONSE_PROMPT_FEW_SHOTS,
-                max_tokens=self.chatgpt_token_limit
-            )
-
-            #Uncomment to debug token usage.
-            #print(messages)
-            #message_string = ""
-            #for message in messages:
-            #    # enumerate the messages and add the role and content elements of the dictoinary to the message_string
-            #    message_string += f"{message['role']}: {message['content']}\n"
-            #print("Content Tokens: ", self.num_tokens_from_string("Sources:\n" + content + "\n\n", "cl100k_base"))
-            #print("System Message Tokens: ", self.num_tokens_from_string(system_message, "cl100k_base"))
-            #print("Few Shot Tokens: ", self.num_tokens_from_string(self.response_prompt_few_shots[0]['content'], "cl100k_base"))
-            #print("Message Tokens: ", self.num_tokens_from_string(message_string, "cl100k_base"))
-
-            
-            chat_completion= await self.client.chat.completions.create(
-            model=self.chatgpt_deployment,
-            messages=messages,
-            temperature=float(overrides.get("response_temp")) or 0.6,
-            max_tokens=1024,
-            n=1,
-            
-        )
         # STEP 4: Format the response
-        msg_to_display = '\n\n'.join([str(message) for message in messages])
-        generated_response=chat_completion.choices[0].message.content
+        # msg_to_display = '\n\n'.join([str(message) for message in messages])
+        # generated_response=chat_completion.choices[0].message.content
 
-        # # Detect the language of the response
-        response_language = self.detect_language(generated_response)
-        #if response is not in user's language, translate it to user's language
-        if response_language != detectedlanguage:
-            translated_response = self.translate_response(generated_response, detectedlanguage)
-        else:
-            translated_response = generated_response
-        thought_chain["work_response"] = urllib.parse.unquote(translated_response)
+        # # # Detect the language of the response
+        # response_language = self.detect_language(generated_response)
+        # #if response is not in user's language, translate it to user's language
+        # if response_language != detectedlanguage:
+        #     translated_response = self.translate_response(generated_response, detectedlanguage)
+        # else:
+        #     translated_response = generated_response
+        # thought_chain["work_response"] = urllib.parse.unquote(translated_response)
+            result = []
+            initial_data = {
+                "data_points":data_points,
+                "thought_chain":thought_chain,
+                "work_citation_lookup":citation_lookup
+            }
+            print(f"{json.dumps(initial_data)}")
+            yield f"{json.dumps(initial_data)}"
         
-        return {
-            "data_points": data_points,
-            "answer": f"{urllib.parse.unquote(translated_response)}",
-            "thoughts": f"Searched for:<br>{generated_query}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
-            "thought_chain": thought_chain,
-            "work_citation_lookup": citation_lookup,
-            "web_citation_lookup": {}
-        }
-
+            # STEP 4: Format the response
+            async for event_chunk in chat_completion:
+                if event_chunk.choices:
+                # Check if there is at least one element and the first element has the key 'delta'
+                    if event_chunk.choices[0].delta.content:
+                        content = event_chunk.choices[0].delta.content
+                        # print (content)
+                        result.append(content)
+                        print(f'{{"data": {json.dumps(content)}}}\n\n')
+                        yield f'{{"data": {json.dumps(content)}}}'
+            completion_tokens = num_tokens_from_messages({"role": "user", "content":"".join(result)}, "gpt-4")
+            token_ussage = {
+                "user_query_tokens" : user_query_tokens,
+                "sytem_prompt_tokens": sytem_prompt_tokens,
+                "content_tokens": content_tokens,
+                "history_tokens": history_tokens, 
+                "completion_tokens": completion_tokens                   
+            }
+            print(f"{json.dumps(token_ussage)}")
+            yield f"{json.dumps(token_ussage)}"  
+            # yield (f'event: end\ndata: Stream ended\n\n')
+        except Exception as e:
+            print(e)
+            # yield f"{json.dumps({'error': str(e)})}\n\n"
+            
+            
     def detect_language(self, text: str) -> str:
         """ Function to detect the language of the text"""
         try:
@@ -488,3 +529,9 @@ class ChatReadRetrieveReadApproach(Approach):
         except Exception as error:
             logging.error(f"Unable to parse source file name: {str(error)}")
             return ""
+        
+    def num_tokens_from_string(self, string: str, encoding_name: str) -> int:
+        """ Function to return the number of tokens in a text string"""
+        encoding = tiktoken.get_encoding(encoding_name)
+        num_tokens = len(encoding.encode(string))
+        return num_tokens

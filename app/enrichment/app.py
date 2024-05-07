@@ -348,6 +348,7 @@ def poll_queue() -> None:
             chunk_list = container_client.list_blobs(name_starts_with=chunk_folder_path)
             chunks = list(chunk_list)
             i = 0
+            log.debug("Start Indexing...")
                             
             for chunk in chunks:
                 statusLog.update_document_state( blob_path, f"Indexing {i+1}/{len(chunks)}", State.INDEXING)

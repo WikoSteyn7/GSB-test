@@ -207,7 +207,6 @@ return (
             </Button>
         </div>
         </form>
-        {loading && <div className="spinner">Loading{dots}</div>}
         {error && <div className="spinner">{errorMessage}</div>}
         {<CharacterStreamer key={streamKey} eventSource={eventSourceRef.current} onStreamingComplete={handleCloseEvent} classNames={styles.centeredAnswerContainer} nonEventString={output} /> }
     </div>

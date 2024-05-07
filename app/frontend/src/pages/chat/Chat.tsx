@@ -68,6 +68,7 @@ const Chat = () => {
 
     const [selectedAnswer, setSelectedAnswer] = useState<number>(0);
     const [answers, setAnswers] = useState<[user: string, response: ChatResponse][]>([]);
+    const [answerEventSource, setAnswerEventSource] = useState<EventSource | undefined>(undefined);
 
     async function fetchFeatureFlags() {
         try {
@@ -118,8 +119,22 @@ const Chat = () => {
                 thought_chain: thought_chain
             };
             const result = await chatApi(request);
-            result.approach = approach;
-            setAnswers([...answers, [question, result]]);
+            // result.approach = approach;
+            // This answer will get updated in the Answer component as part of a callback
+            const temp: ChatResponse = {
+                answer: "",
+                thoughts: "",
+                data_points: [],
+                approach: approach,
+                thought_chain: {
+                    "work_response": "",
+                    "web_response": ""
+                },
+                work_citation_lookup: {},
+                web_citation_lookup: {}
+            };
+            setAnswerEventSource(result);
+            setAnswers([...answers, [question, temp]]);
         } catch (e) {
             setError(e);
         } finally {
@@ -218,6 +233,7 @@ const Chat = () => {
 
     const onChatModeChange = (_ev: any) => {
         const chatMode = _ev.target.value as ChatMode || ChatMode.WorkOnly;
+        answerEventSource?.close();
         setChatMode(chatMode);
         if (chatMode == ChatMode.WorkOnly)
                 setDefaultApproach(Approaches.ReadRetrieveRead);
@@ -299,16 +315,29 @@ const Chat = () => {
         };
     }, []);
 
+    const updateAnswerAtIndex = (index: number, response: ChatResponse) => {
+        setAnswers(currentAnswers => {
+            const updatedAnswers = [...currentAnswers];
+            updatedAnswers[index] = [updatedAnswers[index][0], response];
+            console.log(updatedAnswers);
+            return updatedAnswers;
+        });
+    }
+
+    const removeAnswerAtIndex = (index: number) => {
+        const newItems = answers.filter((item, idx) => idx !== index);
+        setAnswers(newItems);
+    }
+
     return (
         <div className={styles.container}>
-            <div className={styles.subHeader}>
-                <ChatModeButtonGroup className="" defaultValue={activeChatMode} onClick={onChatModeChange} featureFlags={featureFlags} /> 
+            
                 <div className={styles.commandsContainer}>
                     <ClearChatButton className={styles.commandButton} onClick={clearChat} disabled={!lastQuestionRef.current || isLoading} />
                     <SettingsButton className={styles.commandButton} onClick={() => setIsConfigPanelOpen(!isConfigPanelOpen)} />
                     <InfoButton className={styles.commandButton} onClick={() => setIsInfoPanelOpen(!isInfoPanelOpen)} />
                 </div>
-            </div>
+           
             <div className={styles.chatRoot}>
                 <div className={styles.chatContainer}>
                     {!lastQuestionRef.current ? (
@@ -357,6 +386,9 @@ const Chat = () => {
                                         <Answer
                                             key={index}
                                             answer={answer[1]}
+                                            setError={(error) => {setError(error); removeAnswerAtIndex(index); }}
+                                            answerEventSource={answerEventSource}
+                                            setAnswer={(response) => updateAnswerAtIndex(index, response)}
                                             isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
                                             onCitationClicked={(c, s, p) => onShowCitation(c, s, p, index)}
                                             onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
@@ -374,17 +406,6 @@ const Chat = () => {
                                     </div>
                                 </div>
                             ))}
-                            {isLoading && (
-                                <>
-                                    <UserChatMessage
-                                        message={lastQuestionRef.current}
-                                        approach={activeApproach}
-                                    />
-                                    <div className={styles.chatMessageGptMinWidth}>
-                                        <AnswerLoading approach={activeApproach}/>
-                                    </div>
-                                </>
-                            )}
                             {error ? (
                                 <>
                                     <UserChatMessage message={lastQuestionRef.current} approach={activeApproach}/>
