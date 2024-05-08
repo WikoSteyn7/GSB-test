@@ -16,11 +16,11 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background-color: #f2f2f2;
+    background-color: #657178;
 }
 
 .header {
-    background-color: #222222;
+    background-color: #2e383c;
     color: #f2f2f2;
 }
 

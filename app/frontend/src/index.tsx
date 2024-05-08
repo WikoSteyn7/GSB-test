@@ -26,8 +26,6 @@ export default function App() {
                     <Route index element={<Chat />} />
                     <Route path="content" element={<Content />} />
                     <Route path="*" element={<NoPage />} />
-                    <Route path="tutor" element={<Tutor />} />
-                    <Route path="tda" element={<Tda folderPath={""} tags={[]} />} />
             </Route>
             </Routes>
         </HashRouter>    

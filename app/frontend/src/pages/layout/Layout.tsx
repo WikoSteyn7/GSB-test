@@ -3,6 +3,7 @@
 
 import { Outlet, NavLink, Link } from "react-router-dom";
 import openai from "../../assets/openai.svg";
+import gsb from "../../assets/GenSafe_Logo.svg";
 import { WarningBanner } from "../../components/WarningBanner/WarningBanner";
 import styles from "./Layout.module.css";
 import { Title } from "../../components/Title/Title";
@@ -32,7 +33,7 @@ export const Layout = () => {
                 <WarningBanner />
                 <div className={styles.headerContainer}>
                     <div className={styles.headerTitleContainer}>
-                        <img src={openai} alt="Azure OpenAI" className={styles.headerLogo} />
+                        <img src={gsb} alt="GensafeboardAI" className={styles.headerLogo} />
                         <h3 className={styles.headerTitle}><Title /></h3>
                     </div>
                     <nav>
@@ -54,17 +55,6 @@ export const Layout = () => {
                                     <br />  
                                     <p className={styles.centered}>(preview)</p>
                                     </NavLink>
-                                </li>
-                            }
-                            {featureFlags?.ENABLE_TABULAR_DATA_ASSISTANT &&
-                                <li className={styles.headerNavLeftMargin}>
-                                    <NavLink to="/tda" className={({ isActive }) => (isActive ? styles.headerNavPageLinkActive : styles.headerNavPageLink)}>
-                                    Tabular Data Assistant
-                                    <br />  
-                                    <p className={styles.centered}>(preview)</p>
-                                    </NavLink>
-                                    
-                                      
                                 </li>
                             }
                     </ul>
