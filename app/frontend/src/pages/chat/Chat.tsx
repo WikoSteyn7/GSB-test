@@ -68,7 +68,7 @@ const Chat = () => {
 
     const [selectedAnswer, setSelectedAnswer] = useState<number>(0);
     const [answers, setAnswers] = useState<[user: string, response: ChatResponse][]>([]);
-    const [answerEventSource, setAnswerEventSource] = useState<EventSource | undefined>(undefined);
+    const [answerStream, setAnswerStream] = useState<ReadableStream | undefined>(undefined);
 
     async function fetchFeatureFlags() {
         try {
@@ -119,8 +119,10 @@ const Chat = () => {
                 thought_chain: thought_chain
             };
             const result = await chatApi(request);
-            // result.approach = approach;
-            // This answer will get updated in the Answer component as part of a callback
+            if (!result.body) {
+                throw Error("No response body");
+            }
+
             const temp: ChatResponse = {
                 answer: "",
                 thoughts: "",
@@ -133,8 +135,9 @@ const Chat = () => {
                 work_citation_lookup: {},
                 web_citation_lookup: {}
             };
-            setAnswerEventSource(result);
+
             setAnswers([...answers, [question, temp]]);
+            setAnswerStream(result.body);
         } catch (e) {
             setError(e);
         } finally {
@@ -319,7 +322,6 @@ const Chat = () => {
         setAnswers(currentAnswers => {
             const updatedAnswers = [...currentAnswers];
             updatedAnswers[index] = [updatedAnswers[index][0], response];
-            console.log(updatedAnswers);
             return updatedAnswers;
         });
     }
@@ -384,8 +386,8 @@ const Chat = () => {
                                         <Answer
                                             key={index}
                                             answer={answer[1]}
+                                            answerStream={answerStream}
                                             setError={(error) => {setError(error); removeAnswerAtIndex(index); }}
-                                            answerEventSource={answerEventSource}
                                             setAnswer={(response) => updateAnswerAtIndex(index, response)}
                                             isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
                                             onCitationClicked={(c, s, p) => onShowCitation(c, s, p, index)}

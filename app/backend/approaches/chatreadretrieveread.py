@@ -2,11 +2,12 @@
 # Licensed under the MIT license.
 
 import json
+import json
 import re
 import logging
 import urllib.parse
 from datetime import datetime, timedelta
-from typing import Any, Sequence
+from typing import Any, AsyncGenerator, Coroutine, Sequence
 
 import openai
 from openai import AzureOpenAI
@@ -384,6 +385,17 @@ class ChatReadRetrieveReadApproach(Approach):
                 stream=True
                 )
 
+            elif self.model_name.startswith("gpt-4"):
+                messages = self.get_messages_from_history(
+                    system_message,
+                    # "Sources:\n" + content + "\n\n" + system_message,
+                    self.model_name,
+                    history,
+                    # history[-1]["user"],
+                    history[-1]["user"] + "Sources:\n" + content + "\n\n", # GPT 4 starts to degrade with long system messages. so moving sources here 
+                    self.RESPONSE_PROMPT_FEW_SHOTS,
+                    max_tokens=self.chatgpt_token_limit
+                )
             elif self.model_name.startswith("gpt-4"):
                 messages = self.get_messages_from_history(
                     system_message,

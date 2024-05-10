@@ -328,10 +328,13 @@ async def chat(request: Request):
         if not impl:
             return {"error": "unknown approach"}, 400
         
-        result = impl.run(sessions[session_id].get("history", []), sessions[session_id].get("overrides", {}), {}, sessions[session_id].get("thought_chain", {}))
-        print(result)
-        return StreamingResponse(result, media_type="text/event-stream")
-        
+        if (Approaches(int(approach)) == Approaches.CompareWorkWithWeb or Approaches(int(approach)) == Approaches.CompareWebWithWork):
+            r = impl.run(json_body.get("history", []), json_body.get("overrides", {}), json_body.get("citation_lookup", {}), json_body.get("thought_chain", {}))
+        else:
+            r = impl.run(json_body.get("history", []), json_body.get("overrides", {}), {}, json_body.get("thought_chain", {}))
+       
+        return StreamingResponse(r, media_type="application/x-ndjson")
+
     except Exception as ex:
         log.error(f"Error in chat:: {ex}")
         raise HTTPException(status_code=500, detail=str(ex)) from ex

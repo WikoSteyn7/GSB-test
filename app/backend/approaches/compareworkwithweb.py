@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import json
+import logging
 import os
 from typing import Any, Sequence
 import urllib.parse
@@ -82,27 +83,17 @@ class CompareWorkWithWeb(Approach):
         """
         # Step 1: Call bing Search Approach for a Bing LLM Response and Citations
         chat_bing_search = ChatWebRetrieveRead(self.model_name, self.chatgpt_deployment, self.query_term_language, self.bing_search_endpoint, self.bing_search_key, self.bing_safe_search)
-        #bing_search_response = await chat_bing_search.run(history, overrides, {}, thought_chain)
-        #self.web_citations = bing_search_response.get("web_citation_lookup")
-        wrr_response = chat_bing_search.run(history, overrides, {}, thought_chain)
+        bing_search_response = chat_bing_search.run(history, overrides, {}, thought_chain)
+        
         content = ""
-        async for event in wrr_response:
-             # Splitting on '\n' to separate the headers from data but not stripping all whitespace
-            parts = event.split('\n')
-            header = parts[0]
-            data = '\n'.join(parts[1:]).rstrip('\n')  # Only strip the trailing newlines
+        async for event in bing_search_response:
+            eventJson = json.loads(event)
+            if "web_citation_lookup" in eventJson:
+                self.web_citations = eventJson["web_citation_lookup"]
+            elif "content" in eventJson:
+                content += eventJson["content"]
 
-            if 'event: startup' in event:
-                startupData = json.loads(event.split('\n')[1].split('data: ')[1])
-                # print("Startup Data:", json_data)
-            elif 'data:' in header and 'event: end' not in header:
-                # Output data, preserving internal whitespace
-                content += event[6:].replace('\n\n', '')  # Skip 'data: ' and do not strip
-            elif 'event: end' in event:
-                print("Stream ended.")
-                wrr_response.aclose()
-
-        self.web_citations = startupData.get("web_citation_lookup")
+        thought_chain["web_response"] = content
         user_query = history[-1].get("user")
         rag_answer=next((obj['bot'] for obj in reversed(history) if 'bot' in obj), None)
         thought_chain["work_response"] = rag_answer
@@ -130,40 +121,36 @@ class CompareWorkWithWeb(Approach):
              max_tokens=4097 - 500
          )
         msg_to_display = '\n\n'.join([str(message) for message in messages])
+        try:
+            # Step 3: Final comparative analysis using OpenAI Chat Completion
+            chat_completion = await openai.ChatCompletion.acreate(
+                deployment_id=self.chatgpt_deployment,
+                model=self.model_name,
+                messages=messages,
+                temperature=float(overrides.get("response_temp")) or 0.6,
+                max_tokens=1024,
+                n=1,
+                stream=True)
 
-        # Step 3: Final comparative analysis using OpenAI Chat Completion
-        
-        chat_completion = await openai.ChatCompletion.acreate(
-            deployment_id=self.chatgpt_deployment,
-            model=self.model_name,
-            messages=messages,
-            temperature=float(overrides.get("response_temp")) or 0.6,
-            max_tokens=1024,
-            n=1,
-            stream=True
-        )
-        
-        initial_data = {
-            "data_points": None,
-            "thoughts": "Searched for:<br>A Comparative Analysis<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
-            "thought_chain": thought_chain,
-            "work_citation_lookup": work_citation_lookup,
-            "web_citation_lookup": self.web_citations
-        }
-        yield f"event: startup\ndata: {json.dumps(initial_data)}\n\n"
-        
-        # STEP 4: Format the response
-        async for chunk in chat_completion:
-            # Check if there is at least one element and the first element has the key 'delta'
-            if chunk.choices and isinstance(chunk.choices[0], dict) and 'content' in chunk.choices[0].delta:
-                yield f"data: {chunk.choices[0].delta.content}\n\n"
-
-        # Step 4: Append web citations from the Bing Search approach
-        for idx, url in enumerate(self.web_citations.keys(), start=1):
-            yield f"data: [url{idx}]\n\n"
+            yield json.dumps({"data_points": {},
+                            "thoughts": "Searched for:<br>A Comparitive Analysis<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
+                            "thought_chain": thought_chain,
+                            "work_citation_lookup": work_citation_lookup,
+                            "web_citation_lookup": self.web_citations}) + "\n"
             
-        yield (f'event: end\ndata: Stream ended\n\n')
-        
+            # STEP 4: Format the response
+            async for chunk in chat_completion:
+                # Check if there is at least one element and the first element has the key 'delta'
+                if chunk.choices and isinstance(chunk.choices[0], dict) and 'content' in chunk.choices[0].delta:
+                    yield json.dumps({"content": chunk.choices[0].delta.content}) + "\n"
+            # Step 4: Append web citations from the Bing Search approach
+            for idx, url in enumerate(self.web_citations.keys(), start=1):
+                yield json.dumps({"content": f"[url{idx}]"}) + "\n"
+        except Exception as e:
+            logging.error(f"Error in compare work with web: {e}")
+            yield json.dumps({"error": "An error occurred while generating the completion."}) + "\n"
+            return
+
     async def make_chat_completion(self, messages):
         """
         Generates a chat completion response using the chat-based language model.
