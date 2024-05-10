@@ -24,7 +24,7 @@ build-containers: extract-env
 infrastructure: check-subscription ## Deploy infrastructure
 	@./scripts/inf-create.sh
 
-extract-env: extract-env-debug-webapp extract-env-debug-functions ## Extract infrastructure.env file from BICEP output
+extract-env: extract-env-debug-webapp extract-env-debug-functions ## Extract infrastructure.env file from Terraform output
 	 @./scripts/json-to-env.sh < inf_output.json > ./scripts/environments/infrastructure.env
 
 deploy-webapp: extract-env ## Deploys the web app code to Azure App Service
@@ -39,10 +39,10 @@ deploy-enrichments: extract-env ## Deploys the web app code to Azure App Service
 deploy-search-indexes: extract-env ## Deploy search indexes
 	@./scripts/deploy-search-indexes.sh
 
-extract-env-debug-webapp: ## Extract infrastructure.debug.env file from BICEP output
+extract-env-debug-webapp: ## Extract infrastructure.debug.env file from Terraform output
 	@./scripts/json-to-env.webapp.debug.sh < inf_output.json > ./scripts/environments/infrastructure.debug.env
 
-extract-env-debug-functions: ## Extract local.settings.json to debug functions from BICEP output
+extract-env-debug-functions: ## Extract local.settings.json to debug functions from Terraform output
 	@./scripts/json-to-env.function.debug.sh < inf_output.json > ./functions/local.settings.json
 
 # Utils (used by other Makefile rules)
@@ -64,26 +64,5 @@ destroy-inf: check-subscription
 functional-tests: extract-env ## Run functional tests to check the processing pipeline is working
 	@./scripts/functional-tests.sh	
 
-merge-databases: ## Upgrade from bicep to terraform
-	@figlet "Upgrading in place"
+run-migration: ## Migrate from BICEP to Terraform
 	python ./scripts/merge-databases.py
-
-import-state: check-subscription ## import state of current srevcies to TF state
-	@./scripts/inf-import-state.sh
-
-# Command to merge databases and import TF state in prep for an upgrade from 1.0 to 1.n
-prep-upgrade: 
-	@figlet "Upgrading"
-	merge-databases 
-	import-state 
-
-# Apply role assignments as needed to upgrade
-prep-env: 
-	@figlet "Preparing Environment"
-	@./scripts/prep-env.sh
-
-prep-migration-env: ## Prepare the environment for migration by assigning required roles
-	@./scripts/prep-migration-env.sh
-
-run-data-migration: ## Run the data migration moving data from one rg to another
-	python ./scripts/extract-content.py
