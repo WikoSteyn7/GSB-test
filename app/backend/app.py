@@ -319,10 +319,8 @@ async def chat(request: Request):
         dict: The error response if an exception occurs during the chat
     """
     
-    session_id = str(uuid.uuid4())
-    sessions[session_id] = await request.json();
-    sessions[session_id]['date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S");
-    approach = sessions[session_id].get("approach")
+    json_body = await request.json()
+    approach = json_body.get("approach")
     try:
         impl = chat_approaches.get(Approaches(int(approach)))
         if not impl:

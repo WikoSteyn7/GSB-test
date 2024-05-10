@@ -11,6 +11,7 @@ import { TagPickerInline } from "../../components/TagPicker/TagPicker"
 import { FolderPicker } from '../../components/FolderPicker/FolderPicker';
 import { SparkleFilled, DocumentPdfFilled, DocumentDataFilled, GlobePersonFilled, MailFilled, StoreMicrosoftFilled } from "@fluentui/react-icons";
 import styles from "./Content.module.css";
+import elogo from "../../assets/Icon_E.svg";
 
 export interface IButtonExampleProps {
     disabled?: boolean;
@@ -45,39 +46,36 @@ const Content = () => {
                 <PivotItem headerText="Upload Files" aria-label="Upload Files Tab">
                     <div className={styles.App} >
                         <div style={{ marginBottom: '20px', marginTop: '20px' }}>
-                            <SparkleFilled fontSize={"60px"} primaryFill={"rgba(115, 118, 225, 1)"} aria-hidden="true" aria-label="Supported File Types" />
+                            <img src={elogo} alt="GensafeboardAI" className={styles.headerLogo} height="40" />
                             <h1 className={styles.EmptyStateTitle}>Supported file types</h1>
-                            <span className={styles.EmptyObjectives}>
-                                The Information Assistant Accelerator currently supports the following file types:
-                            </span>
+
                             <span className={styles.EmptyObjectivesList}>
                                 <span className={styles.EmptyObjectivesListItem}>
-                                    <DocumentDataFilled fontSize={"40px"} primaryFill={"rgba(115, 118, 225, 1)"} aria-hidden="true" aria-label="Data" />
+                                    <DocumentDataFilled fontSize={"40px"} primaryFill={"rgba(109, 197, 172, 1)"} aria-hidden="true" aria-label="Data" />
                                     <span className={styles.EmptyObjectivesListItemText}><b>Data</b><br />
                                         xml, json, csv, tsv, txt
                                     </span>
                                 </span>
                                 <span className={styles.EmptyObjectivesListItem}>
-                                    <StoreMicrosoftFilled fontSize={"40px"} primaryFill={"rgba(115, 118, 225, 1)"} aria-hidden="true" aria-label="Microsoft 365" />
+                                    <StoreMicrosoftFilled fontSize={"40px"} primaryFill={"rgba(109, 197, 172, 1)"} aria-hidden="true" aria-label="Microsoft 365" />
                                     <span className={styles.EmptyObjectivesListItemText}><b>Productivity Software</b><br />
                                         pptx, docx & xlsx
                                     </span>
                                 </span>
                                 <span className={styles.EmptyObjectivesListItem}>
-                                    <DocumentPdfFilled fontSize={"40px"} primaryFill={"rgba(115, 118, 225, 1)"} aria-hidden="true" aria-label="PDF" />
+                                    <DocumentPdfFilled fontSize={"40px"} primaryFill={"rgba(109, 197, 172, 1)"} aria-hidden="true" aria-label="PDF" />
                                     <span className={styles.EmptyObjectivesListItemText}><b>PDF</b><br />
-                                    For page count maximum check documentation  <a href="https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/concept-layout?view=doc-intel-4.0.0#input-requirements">
-                                        here</a> 
+                                    pdf 
                                     </span>
                                 </span>
                                 <span className={styles.EmptyObjectivesListItem}>
-                                    <GlobePersonFilled fontSize={"40px"} primaryFill={"rgba(115, 118, 225, 1)"} aria-hidden="true" aria-label="Web" />
+                                    <GlobePersonFilled fontSize={"40px"} primaryFill={"rgba(109, 197, 172, 1)"} aria-hidden="true" aria-label="Web" />
                                     <span className={styles.EmptyObjectivesListItemText}><b>Web</b><br />
                                         htm & html
                                     </span>
                                 </span>
                                 <span className={styles.EmptyObjectivesListItem}>
-                                    <MailFilled fontSize={"40px"} primaryFill={"rgba(115, 118, 225, 1)"} aria-hidden="true" aria-label="Email" />
+                                    <MailFilled fontSize={"40px"} primaryFill={"rgba(109, 197, 172, 1)"} aria-hidden="true" aria-label="Email" />
                                     <span className={styles.EmptyObjectivesListItemText}><b>Email</b><br />
                                         eml & msg
                                     </span>

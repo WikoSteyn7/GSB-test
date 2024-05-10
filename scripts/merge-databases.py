@@ -71,8 +71,8 @@ except:
         old_env = json.load(file)
         old_resource_group = old_env['old_env']['resource_group']
         old_random_text = old_env['old_env']['random_text'].lower() 
-        cosmosdb_url = f'https://infoasst-cosmos-{old_random_text}.documents.azure.com:443/'
-        key_vault_name = f'infoasst-kv-{old_random_text}'
+        cosmosdb_url = f'https://gsb-dev-cosmos-{old_random_text}.documents.azure.com:443/'
+        key_vault_name = f'gsb-dev-kv-{old_random_text}'
 
 key_vault_url = get_keyvault_url(key_vault_name)
 sClient = SecretClient(vault_url=key_vault_url, credential=credential) 

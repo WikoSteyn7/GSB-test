@@ -10,7 +10,7 @@ resource "azurerm_storage_account" "media_storage" {
 
   account_tier                    = "Standard"
   account_replication_type        = "LRS"
-  name                            = "infoasststoremedia${var.random_string}"
+  name                            = "gsb-devstoremedia${var.random_string}"
   enable_https_traffic_only       = true
   allow_nested_items_to_be_public = false
 }
@@ -26,7 +26,7 @@ data "template_file" "workflow" {
 resource "azurerm_user_assigned_identity" "vi" {
   resource_group_name = var.resource_group_name
   location            = var.location
-  name                = "infoasst-ua-ident-${var.random_string}"
+  name                = "gsb-dev-ua-ident-${var.random_string}"
 }
 
 resource "azurerm_role_assignment" "vi_storageaccount_mi_access" {
@@ -39,7 +39,7 @@ resource "azurerm_resource_group_template_deployment" "vi" {
   depends_on          = [azurerm_role_assignment.vi_storageaccount_mi_access]
   resource_group_name = var.resource_group_name
   parameters_content = jsonencode({
-    "name"                      = { value = "infoasst-avi-${var.random_string}" },
+    "name"                      = { value = "gsb-dev-avi-${var.random_string}" },
     "managedIdentityId"         = { value = azurerm_user_assigned_identity.vi.id },
     "storageServicesResourceId" = { value = azurerm_storage_account.media_storage.id },
     "tags"                      = { value = var.tags },
@@ -65,9 +65,9 @@ output "media_storage_account_id" {
 }
 
 output "vi_name" {
-  value = "infoasst-avi-${var.random_string}"
+  value = "gsb-dev-avi-${var.random_string}"
 }
 
 output "vi_id" {
-  value = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.VideoIndexer/accounts/infoasst-avi-${var.random_string}"
+  value = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.VideoIndexer/accounts/gsb-dev-avi-${var.random_string}"
 }

@@ -139,7 +139,7 @@ models["azure-openai_" + ENV["AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME"]] = AzOAIE
 
 model_info["azure-openai_" + ENV["AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME"]] = {
     "model": "azure-openai_" + ENV["AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME"],
-    "vector_size": 1536,
+    "vector_size": 3072,
     # Source: https://platform.openai.com/docs/guides/embeddings/what-are-embeddings
 }
 

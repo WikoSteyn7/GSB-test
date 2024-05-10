@@ -54,7 +54,7 @@
     justify-content: end;
     font-size: small;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: dimgrey;
+    color: rgb(255, 255, 255);
 }
 
 .notification {
@@ -91,7 +91,7 @@
   justify-content: center; /* Horizontally center the text and the icon */
   background-color: transparent; /* Transparent background */
   cursor: pointer; /* Change cursor to pointer on hover */
-  color: #606060; /* Mid-dark grey text */
+  color: #ffffff; /* Mid-dark grey text */
   padding-right: 20px; /* Add 10px padding on the right side */
   padding-top: 10px; /* Add 20px padding on the top */
 }
@@ -109,4 +109,4 @@
 }
 
 .refreshicon {
-  fill: #606060; /* Mid-dark grey for SVG icons */}
+  fill: #ffffff; /* Mid-dark grey for SVG icons */}

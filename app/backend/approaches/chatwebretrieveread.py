@@ -91,7 +91,7 @@ class ChatWebRetrieveRead(Approach):
        
          
         self.client = AsyncAzureOpenAI(
-        azure_endpoint = openai.api_base , 
+        azure_endpoint = openai.api_base, 
         api_key=openai.api_key,  
         api_version=openai.api_version)
         

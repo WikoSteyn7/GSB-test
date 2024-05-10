@@ -66,4 +66,4 @@ ${DIR}/configuration-create.sh
 # Initialise Terraform with the correct path
 ${DIR}/terraform-init.sh "$DIR/../infra/"
 
-${DIR}/terraform-plan-apply.sh -d "$DIR/../infra" -p "infoasst" -o "$DIR/../inf_output.json"
+${DIR}/terraform-plan-apply.sh -d "$DIR/../infra" -p "gsb-dev" -o "$DIR/../inf_output.json"

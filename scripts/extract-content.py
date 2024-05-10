@@ -79,30 +79,30 @@ with open(config_file_path, 'r') as file:
 
 credential = DefaultAzureCredential()
 
-old_key_vault_name = f'infoasst-kv-{old_random_text}'
+old_key_vault_name = f'gsb-dev-kv-{old_random_text}'
 old_key_vault_url = get_keyvault_url(old_key_vault_name)
 old_secret_client = SecretClient(vault_url=old_key_vault_url, credential=credential) 
 
-new_key_vault_name = f'infoasst-kv-{new_random_text}'
+new_key_vault_name = f'gsb-dev-kv-{new_random_text}'
 new_key_vault_url = get_keyvault_url(new_key_vault_name)
 new_secret_client = SecretClient(vault_url=new_key_vault_url, credential=credential) 
 
-old_cosmosdb_url = f'https://infoasst-cosmos-{old_random_text}.documents.azure.com:443/'
+old_cosmosdb_url = f'https://gsb-dev-cosmos-{old_random_text}.documents.azure.com:443/'
 old_cosmosdb_key = old_secret_client.get_secret('COSMOSDB-KEY').value
-old_search_endpoint = f'https://infoasst-search-{old_random_text}.search.windows.net'
+old_search_endpoint = f'https://gsb-dev-search-{old_random_text}.search.windows.net'
 old_blob_connection_string = old_secret_client.get_secret('BLOB-CONNECTION-STRING').value
 old_search_key = old_secret_client.get_secret('AZURE-SEARCH-SERVICE-KEY').value 
-old_azure_blob_storage_account = f"infoasststore{old_random_text}"
+old_azure_blob_storage_account = f"gsbdevstre1{old_random_text}"
 old_azure_blob_storage_key = old_secret_client.get_secret('AZURE-BLOB-STORAGE-KEY').value 
 old_azure_blob_storage_kendpoint = get_storage_account_endpoint(old_azure_blob_storage_account)
 
 
 new_search_key = new_secret_client.get_secret('AZURE-SEARCH-SERVICE-KEY').value
-new_search_endpoint = f'https://infoasst-search-{new_random_text}.search.windows.net'
-new_cosmosdb_url = f'https://infoasst-cosmos-{new_random_text}.documents.azure.com:443/'
+new_search_endpoint = f'https://gsb-dev-search-{new_random_text}.search.windows.net'
+new_cosmosdb_url = f'https://gsb-dev-cosmos-{new_random_text}.documents.azure.com:443/'
 new_cosmosdb_key = new_secret_client.get_secret('COSMOSDB-KEY').value
 new_blob_connection_string = new_secret_client.get_secret('BLOB-CONNECTION-STRING').value
-new_azure_blob_storage_account = f"infoasststore{new_random_text}"
+new_azure_blob_storage_account = f"gsbdevstre1{new_random_text}"
 new_azure_blob_storage_key = new_secret_client.get_secret('AZURE-BLOB-STORAGE-KEY').value 
 new_azure_blob_storage_kendpoint = get_storage_account_endpoint(new_azure_blob_storage_account)
 

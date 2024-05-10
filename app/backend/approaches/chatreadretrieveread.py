@@ -217,9 +217,16 @@ class ChatReadRetrieveReadApproach(Approach):
             if response.status_code == 200:
                 response_data = response.json()
                 embedded_query_vector =response_data.get('data')          
+            else:
+                # Generate an error message if the embedding generation fails
+                log.error(f"Error generating embedding:: {response.status_code}")
+                yield json.dumps({"error": "Error generating embedding"}) + "\n"
+                return # Go no further
         except Exception as e:
-            yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
-            raise Exception('Error generating embedding:', 500)
+            # Timeout or other error has occurred
+            log.error(f"Error generating embedding: {str(e)}")
+            yield json.dumps({"error": f"Error generating embedding: {str(e)}"}) + "\n"
+            return # Go no further
         
         #vector set up for pure vector search & Hybrid search & Hybrid semantic
         vector = RawVectorQuery(vector=embedded_query_vector, k=top, fields="contentVector")
@@ -348,7 +355,7 @@ class ChatReadRetrieveReadApproach(Approach):
         user_query_tokens = num_tokens_from_messages({"role": "user", "content": user_q}, self.model_name)
         sytem_prompt_tokens=num_tokens_from_messages({"role": "user", "content": system_message}, self.model_name)
         content_tokens= num_tokens_from_messages({"role": "user", "content": content}, self.model_name) 
-        history_content = " ".join([msg["content"] for msg in history[:-1]])             
+        history_content = " "            
         history_tokens= num_tokens_from_messages({"role": "user", "content": history_content}, self.model_name)
 
             
@@ -385,17 +392,7 @@ class ChatReadRetrieveReadApproach(Approach):
                 stream=True
                 )
 
-            elif self.model_name.startswith("gpt-4"):
-                messages = self.get_messages_from_history(
-                    system_message,
-                    # "Sources:\n" + content + "\n\n" + system_message,
-                    self.model_name,
-                    history,
-                    # history[-1]["user"],
-                    history[-1]["user"] + "Sources:\n" + content + "\n\n", # GPT 4 starts to degrade with long system messages. so moving sources here 
-                    self.RESPONSE_PROMPT_FEW_SHOTS,
-                    max_tokens=self.chatgpt_token_limit
-                )
+
             elif self.model_name.startswith("gpt-4"):
                 messages = self.get_messages_from_history(
                     system_message,
@@ -418,8 +415,7 @@ class ChatReadRetrieveReadApproach(Approach):
                 #print("System Message Tokens: ", self.num_tokens_from_string(system_message, "cl100k_base"))
                 #print("Few Shot Tokens: ", self.num_tokens_from_string(self.response_prompt_few_shots[0]['content'], "cl100k_base"))
                 #print("Message Tokens: ", self.num_tokens_from_string(message_string, "cl100k_base"))
-                print(messages)
-                
+                               
                 chat_completion= await self.client.chat.completions.create(
                 model=self.chatgpt_deployment,
                 messages=messages,
@@ -441,14 +437,16 @@ class ChatReadRetrieveReadApproach(Approach):
         # else:
         #     translated_response = generated_response
         # thought_chain["work_response"] = urllib.parse.unquote(translated_response)
+            msg_to_display = '\n\n'.join([str(message) for message in messages])
             result = []
             initial_data = {
                 "data_points":data_points,
+                "thoughts": f"Searched for:<br>{generated_query}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
                 "thought_chain":thought_chain,
                 "work_citation_lookup":citation_lookup
             }
             print(f"{json.dumps(initial_data)}")
-            yield f"{json.dumps(initial_data)}"
+            yield json.dumps(initial_data) + "\n"
         
             # STEP 4: Format the response
             async for event_chunk in chat_completion:
@@ -459,7 +457,7 @@ class ChatReadRetrieveReadApproach(Approach):
                         # print (content)
                         result.append(content)
                         print(f'{{"data": {json.dumps(content)}}}\n\n')
-                        yield f'{{"data": {json.dumps(content)}}}'
+                        yield json.dumps({"content": content}) + "\n"
             completion_tokens = num_tokens_from_messages({"role": "user", "content":"".join(result)}, "gpt-4")
             token_ussage = {
                 "user_query_tokens" : user_query_tokens,
@@ -469,10 +467,12 @@ class ChatReadRetrieveReadApproach(Approach):
                 "completion_tokens": completion_tokens                   
             }
             print(f"{json.dumps(token_ussage)}")
-            yield f"{json.dumps(token_ussage)}"  
+            yield json.dumps(token_ussage) + "\n"
             # yield (f'event: end\ndata: Stream ended\n\n')
         except Exception as e:
             print(e)
+            yield json.dumps({"error": f"Error generating chat completion: {str(e)}"}) + "\n"
+            return
             # yield f"{json.dumps({'error': str(e)})}\n\n"
             
             

@@ -34,7 +34,6 @@ export const Layout = () => {
                 <div className={styles.headerContainer}>
                     <div className={styles.headerTitleContainer}>
                         <img src={gsb} alt="GensafeboardAI" className={styles.headerLogo} />
-                        <h3 className={styles.headerTitle}><Title /></h3>
                     </div>
                     <nav>
                         <ul className={styles.headerNavList}>

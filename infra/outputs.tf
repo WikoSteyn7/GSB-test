@@ -120,7 +120,7 @@ output "BLOB_STORAGE_ACCOUNT_ENDPOINT" {
 }
 
 output "EMBEDDING_VECTOR_SIZE" {
-  value = var.useAzureOpenAIEmbeddings ? "1536" : var.sentenceTransformerEmbeddingVectorSize
+  value = var.useAzureOpenAIEmbeddings ? "3072" : var.sentenceTransformerEmbeddingVectorSize
 }
 
 output "TARGET_EMBEDDINGS_MODEL" {

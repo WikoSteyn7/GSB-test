@@ -137,7 +137,7 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, sourceFile, p
                             <iframe title="Source File" src={'https://view.officeapps.live.com/op/view.aspx?src=' + encodeURIComponent(sourceFile as string) + "&action=embedview&wdStartOn=" + pageNumber} width="100%" height={citationHeight} />
                         ) : sourceFileExt === "pdf" ? (
                             // Use object tag for PDFs because iframe does not support page numbers
-                            <object data={sourceFile + "#page=" + pageNumber} type="application/pdf" width="100%" height={citationHeight} />
+                            <iframe title="Source File" src={sourceFile} width="100%" height={citationHeight} />
                         ) : sourceFileExt === "md" ? (
                             // Render Markdown content using react-markdown
                             <ReactMarkdown>{markdownContent}</ReactMarkdown>

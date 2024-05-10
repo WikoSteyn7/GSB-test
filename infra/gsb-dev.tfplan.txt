@@ -1,0 +1,68 @@
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  ~ update in-place
+
+Terraform will perform the following actions:
+
+  # module.backend.azurerm_monitor_autoscale_setting.scaleout will be updated in-place
+  ~ resource "azurerm_monitor_autoscale_setting" "scaleout" {
+      ~ enabled             = false -> true
+        id                  = "/subscriptions/0e20878e-307f-4ba8-919a-60c5ba5887cd/resourceGroups/gsb-dev/providers/Microsoft.Insights/autoScaleSettings/gsb-dev-asp"
+        name                = "gsb-dev-asp"
+        tags                = {}
+        # (3 unchanged attributes hidden)
+
+        # (1 unchanged block hidden)
+    }
+
+  # module.enrichmentApp.azurerm_monitor_autoscale_setting.scaleout will be updated in-place
+  ~ resource "azurerm_monitor_autoscale_setting" "scaleout" {
+      ~ enabled             = false -> true
+        id                  = "/subscriptions/0e20878e-307f-4ba8-919a-60c5ba5887cd/resourceGroups/gsb-dev/providers/Microsoft.Insights/autoScaleSettings/gsb-dev-enrichmentasp"
+        name                = "gsb-dev-enrichmentasp"
+        tags                = {}
+        # (3 unchanged attributes hidden)
+
+        # (1 unchanged block hidden)
+    }
+
+  # module.functions.azurerm_linux_function_app.function_app will be updated in-place
+  ~ resource "azurerm_linux_function_app" "function_app" {
+      ~ app_settings                                   = {
+          + "APPINSIGHTS_INSTRUMENTATIONKEY"             = (sensitive value)
+          + "APPLICATIONINSIGHTS_CONNECTION_STRING"      = (sensitive value)
+          + "AzureWebJobsStorage"                        = (sensitive value)
+          + "FUNCTIONS_EXTENSION_VERSION"                = "~4"
+          + "WEBSITE_NODE_DEFAULT_VERSION"               = "~14"
+            # (49 unchanged elements hidden)
+        }
+        id                                             = "/subscriptions/0e20878e-307f-4ba8-919a-60c5ba5887cd/resourceGroups/gsb-dev/providers/Microsoft.Web/sites/gsb-dev-func"
+        name                                           = "gsb-dev-func"
+      ~ storage_account_access_key                     = (sensitive value)
+        tags                                           = {}
+        # (30 unchanged attributes hidden)
+
+      ~ site_config {
+          - application_insights_connection_string  = (sensitive value)
+          - application_insights_key                = (sensitive value)
+            # (23 unchanged attributes hidden)
+
+            # (1 unchanged block hidden)
+        }
+
+        # (2 unchanged blocks hidden)
+    }
+
+  # module.functions.azurerm_monitor_autoscale_setting.scaleout will be updated in-place
+  ~ resource "azurerm_monitor_autoscale_setting" "scaleout" {
+      ~ enabled             = false -> true
+        id                  = "/subscriptions/0e20878e-307f-4ba8-919a-60c5ba5887cd/resourceGroups/gsb-dev/providers/Microsoft.Insights/autoScaleSettings/gsb-dev-func-asp"
+        name                = "gsb-dev-func-asp"
+        tags                = {}
+        # (3 unchanged attributes hidden)
+
+        # (1 unchanged block hidden)
+    }
+
+Plan: 0 to add, 4 to change, 0 to destroy.
