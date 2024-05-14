@@ -420,7 +420,6 @@ class ChatReadRetrieveReadApproach(Approach):
                 model=self.chatgpt_deployment,
                 messages=messages,
                 temperature=float(overrides.get("response_temp")) or 0.6,
-                max_tokens=1024,
                 n=1,
                 stream=True
                 
@@ -473,6 +472,8 @@ class ChatReadRetrieveReadApproach(Approach):
             print(e)
             yield json.dumps({"error": f"Error generating chat completion: {str(e)}"}) + "\n"
             return
+
+
             # yield f"{json.dumps({'error': str(e)})}\n\n"
             
             

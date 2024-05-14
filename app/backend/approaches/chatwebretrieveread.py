@@ -161,9 +161,8 @@ class ChatWebRetrieveRead(Approach):
         msg_to_display = '\n\n'.join([str(message) for message in messages])
         try:
             # STEP 3: Use the search results to answer the user's question
-            resp = await openai.ChatCompletion.acreate(
-                deployment_id=self.chatgpt_deployment,
-                model=self.model_name,
+            resp = await self.client.chat.completions.create(
+                model=self.chatgpt_deployment,
                 messages=messages,
                 temperature=0.6,
                 n=1,
@@ -180,8 +179,9 @@ class ChatWebRetrieveRead(Approach):
             # STEP 4: Format the response
             async for chunk in resp:
                 # Check if there is at least one element and the first element has the key 'delta'
-                if chunk.choices and isinstance(chunk.choices[0], dict) and 'content' in chunk.choices[0].delta:
+                if len(chunk.choices) > 0:
                     yield json.dumps({"content": chunk.choices[0].delta.content}) + "\n"
+        
         except Exception as e:
             log.error(f"Error generating chat completion: {str(e)}")
             yield json.dumps({"error": f"Error generating chat completion: {str(e)}"}) + "\n"

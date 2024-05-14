@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import readNDJSONStream from "ndjson-readablestream";
 import { Approaches, ChatResponse } from '../../api';
-
+import readNDJSONStream from "ndjson-readablestream";
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize from 'rehype-sanitize';
 
 const CharacterStreamer = ({ eventSource, nonEventString, onStreamingComplete, classNames, typingSpeed = 30, readableStream, setAnswer, approach = Approaches.ChatWebRetrieveRead, setError }:
    { readableStream?: ReadableStream, setAnswer?: (data: ChatResponse) => void, eventSource?: any; nonEventString?: string, onStreamingComplete: any; classNames?: string; typingSpeed?: number, approach?: Approaches, setError?: (data: string) => void}) => {
@@ -137,7 +138,7 @@ const CharacterStreamer = ({ eventSource, nonEventString, onStreamingComplete, c
   };
 
   return isLoading ? <div className={classNames}>Generating Answer{dots}</div> : 
-        <div className={classNames}><ReactMarkdown>{output}</ReactMarkdown>
+        <div className={classNames}><ReactMarkdown children={output} rehypePlugins={[rehypeRaw, rehypeSanitize]}></ReactMarkdown>
         <div ref={chatMessageStreamEnd} /></div>;
 };
 

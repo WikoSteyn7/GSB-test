@@ -119,10 +119,6 @@ const Chat = () => {
                 citation_lookup: approach == Approaches.CompareWebWithWork ? web_citation_lookup : approach == Approaches.CompareWorkWithWeb ? work_citation_lookup : {},
                 thought_chain: thought_chain
             };
-            const result = await chatApi(request);
-            if (!result.body) {
-                throw Error("No response body");
-            }
 
             const temp: ChatResponse = {
                 answer: "",
@@ -138,6 +134,12 @@ const Chat = () => {
             };
 
             setAnswers([...answers, [question, temp]]);
+
+            const result = await chatApi(request);
+            if (!result.body) {
+                throw Error("No response body");
+            }
+
             setAnswerStream(result.body);
         } catch (e) {
             setError(e);

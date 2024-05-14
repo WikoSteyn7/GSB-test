@@ -45,6 +45,8 @@ load_dotenv()
 azure_openai_chatgpt_deployment = os.getenv("AZURE_OPENAI_CHATGPT_DEPLOYMENT") 
 deployment_name = azure_openai_chatgpt_deployment
 OPENAI_DEPLOYMENT_NAME = deployment_name
+OPENAI_API_BASE = os.environ.get("AZURE_OPENAI_ENDPOINT")
+OPENAI_API_KEY = os.environ.get("AZURE_OPENAI_SERVICE_KEY")
 
 
 # Page title
@@ -104,7 +106,7 @@ def process_agent_scratch_pad(question, df):
     deployment_name=OPENAI_DEPLOYMENT_NAME)  
          
     question = save_chart(question)
-    pdagent = create_pandas_dataframe_agent(chat, df, verbose=True,handle_parsing_errors=True,agent_type=AgentType.OPENAI_FUNCTIONS)
+    pdagent = create_pandas_dataframe_agent(chat, df, verbose=True,agent_type=AgentType.OPENAI_FUNCTIONS)
     for chunk in pdagent.stream({"input": question}):
         if "actions" in chunk:
             for action in chunk["actions"]:

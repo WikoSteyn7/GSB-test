@@ -29,7 +29,7 @@ Once you have the completed setting up a GitHub Codespaces, please move on to th
 
  The IA Accelerator needs to be sized appropriately based on your use case. Please review our [Sizing Estimator](/docs/costestimator.md) to help find the configuration that fits your needs.
 
- To change the size of components deployed, make changes in the [Terraform Variables](/infra/variables.tf) file.
+ To change the size of components deployed, make changes in the [Main Terraform](/infra/main.tf) file.
 
 Once you have completed the Sizing Estimator and sized your deployment appropriately, please move on to the Configuring your Environment step.
 

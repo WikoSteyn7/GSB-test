@@ -141,7 +141,7 @@ class CompareWorkWithWeb(Approach):
             # STEP 4: Format the response
             async for chunk in chat_completion:
                 # Check if there is at least one element and the first element has the key 'delta'
-                if chunk.choices and isinstance(chunk.choices[0], dict) and 'content' in chunk.choices[0].delta:
+                if len(chunk.choices) > 0:
                     yield json.dumps({"content": chunk.choices[0].delta.content}) + "\n"
             # Step 4: Append web citations from the Bing Search approach
             for idx, url in enumerate(self.web_citations.keys(), start=1):
