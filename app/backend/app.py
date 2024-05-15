@@ -327,9 +327,9 @@ async def chat(request: Request):
             return {"error": "unknown approach"}, 400
         
         if (Approaches(int(approach)) == Approaches.CompareWorkWithWeb or Approaches(int(approach)) == Approaches.CompareWebWithWork):
-            r = impl.run(json_body.get("history", []), json_body.get("overrides", {}), json_body.get("citation_lookup", {}), json_body.get("thought_chain", {}))
+            r = impl.run(json_body.get("messages", []), json_body.get("overrides", {}), json_body.get("citation_lookup", {}), json_body.get("thought_chain", {}))
         else:
-            r = impl.run(json_body.get("history", []), json_body.get("overrides", {}), {}, json_body.get("thought_chain", {}))
+            r = impl.run(json_body.get("messages", []), json_body.get("overrides", {}), {}, json_body.get("thought_chain", {}))
        
         return StreamingResponse(r, media_type="application/x-ndjson")
 

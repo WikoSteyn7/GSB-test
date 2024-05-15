@@ -26,7 +26,9 @@ export async function chatApi(options: ChatRequest): Promise<Response> {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            history: options.history,
+            legal_entity: options.legal_entity,
+            user_access_level:options.user_access_level,
+            messages: options.messages,
             approach: options.approach,
             overrides: {
                 semantic_ranker: options.overrides?.semanticRanker,
@@ -42,6 +44,7 @@ export async function chatApi(options: ChatRequest): Promise<Response> {
                 user_persona: options.overrides?.userPersona,
                 system_persona: options.overrides?.systemPersona,
                 ai_persona: options.overrides?.aiPersona,
+                industry_comparison: options.overrides?.industryComparison,
                 response_length: options.overrides?.responseLength,
                 response_temp: options.overrides?.responseTemp,
                 selected_folders: options.overrides?.selectedFolders,

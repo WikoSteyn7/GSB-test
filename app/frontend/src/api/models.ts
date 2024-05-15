@@ -33,6 +33,9 @@ export type ChatRequestOverrides = {
     aiPersona?: string;
     responseLength?: number;
     responseTemp?: number;
+    selectedYears?: string;
+    industryComparison?: boolean;
+    includeOwnCompany?: boolean;
     selectedFolders?: string;
     selectedTags?: string;
 };
@@ -48,9 +51,9 @@ export type ChatResponse = {
     error?: string;
 };
 
-export type ChatTurn = {
-    user: string;
-    bot?: string;
+export type ResponseMessage = {
+    content: string;
+    role: string;
 };
 
 export type Citation = {
@@ -60,7 +63,9 @@ export type Citation = {
   }
 
 export type ChatRequest = {
-    history: ChatTurn[];
+    legal_entity: string; 
+    user_access_level: string;
+    messages: ResponseMessage[];
     approach: Approaches;
     overrides?: ChatRequestOverrides;
     citation_lookup: { [key: string]: { citation: string; source_path: string; page_number: string } };

@@ -15,7 +15,7 @@ interface Props {
 export const ResponseTempButtonGroup = ({ className, onClick, defaultValue }: Props) => {
     return (
         <div className={`${styles.container} ${className ?? ""}`}>
-            <Label>Conversation Type:</Label>
+            <Label>Conversation Temperature:</Label>
             <ButtonGroup className={`${styles.buttongroup ?? ""}`} onClick={onClick}>
                 <Button className={`${defaultValue == 1.0? styles.buttonleftactive : styles.buttonleft ?? ""}`} size="sm" value={1.0} bsPrefix='ia'>{"Creative"}</Button>
                 <Button className={`${defaultValue == 0.6? styles.buttonmiddleactive : styles.buttonmiddle ?? ""}`} size="sm" value={0.6} bsPrefix='ia'>{"Balanced"}</Button>

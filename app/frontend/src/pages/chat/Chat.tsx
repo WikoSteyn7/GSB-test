@@ -11,7 +11,7 @@ import styles from "./Chat.module.css";
 import rlbgstyles from "../../components/ResponseLengthButtonGroup/ResponseLengthButtonGroup.module.css";
 import rtbgstyles from "../../components/ResponseTempButtonGroup/ResponseTempButtonGroup.module.css";
 
-import { chatApi, Approaches, ChatResponse, ChatRequest, ChatTurn, ChatMode, getFeatureFlags, GetFeatureFlagsResponse } from "../../api";
+import { chatApi, Approaches, ChatResponse, ChatRequest, ResponseMessage, ChatMode, getFeatureFlags, GetFeatureFlagsResponse } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 import { ExampleList } from "../../components/Example";
@@ -34,8 +34,13 @@ const Chat = () => {
     const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
     const [retrieveCount, setRetrieveCount] = useState<number>(5);
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
-    const [userPersona, setUserPersona] = useState<string>("analyst");
-    const [systemPersona, setSystemPersona] = useState<string>("an Assistant");
+    const [useComparisson, setUseComparisson] = useState<boolean>(false);
+    const [useIncludeOwnCompany, setUseIncludeOwnCompany] = useState<boolean>(false);
+    const [userPersona, setUserPersona] = useState<string>("Board Member");
+    const [systemPersona, setSystemPersona] = useState<string>("AI Assistant");
+    const [selectedYears, setSelectedYears] = useState<string[]>([]);
+    const [legal_entity, setLegalEntity] = useState<string>("MobiLife");
+    const [user_access_level, setUserAccess_Level] = useState<string>("Board Member");
     // Setting responseLength to 2048 by default, this will effect the default display of the ResponseLengthButtonGroup below.
     // It must match a valid value of one of the buttons in the ResponseLengthButtonGroup.tsx file. 
     // If you update the default value here, you must also update the default value in the onResponseLengthChange method.
@@ -97,9 +102,14 @@ const Chat = () => {
         setActiveAnalysisPanelTab(undefined);
 
         try {
-            const history: ChatTurn[] = answers.map(a => ({ user: a[0], bot: a[1].answer }));
+            const messages: ResponseMessage[] = answers.flatMap(a => [
+                { content: a[0], role: "user" },
+                { content: a[1].answer, role: "assistant" }
+            ]);
             const request: ChatRequest = {
-                history: [...history, { user: question, bot: undefined }],
+                legal_entity: legal_entity,
+                user_access_level:user_access_level,
+                messages: [...messages, { content: question, role: "user" }],
                 approach: approach,
                 overrides: {
                     promptTemplate: undefined,
@@ -113,6 +123,9 @@ const Chat = () => {
                     aiPersona: "",
                     responseLength: responseLength,
                     responseTemp: responseTemp,
+                    selectedYears: selectedYears.includes("selectAll") ? "All" : selectedYears.length == 0 ? "All" : selectedYears.join(","),
+                    industryComparison:useComparisson,
+                    includeOwnCompany:useIncludeOwnCompany,
                     selectedFolders: selectedFolders.includes("selectAll") ? "All" : selectedFolders.length == 0 ? "All" : selectedFolders.join(","),
                     selectedTags: selectedTags.map(tag => tag.name).join(",")
                 },
@@ -163,13 +176,13 @@ const Chat = () => {
         for (let node of _ev.target.parentNode.childNodes) {
             if (node.value == _ev.target.value) {
                 switch (node.value) {
-                    case "1024":
+                    case "256":
                         node.className = `${rlbgstyles.buttonleftactive}`;
                         break;
-                    case "2048":
+                    case "1024":
                         node.className = `${rlbgstyles.buttonmiddleactive}`;
                         break;
-                    case "3072":
+                    case "2048":
                         node.className = `${rlbgstyles.buttonrightactive}`;
                         break;
                     default:
@@ -179,13 +192,13 @@ const Chat = () => {
             }
             else {
                 switch (node.value) {
-                    case "1024":
+                    case "256":
                         node.className = `${rlbgstyles.buttonleft}`;
                         break;
-                    case "2048":
+                    case "1024":
                         node.className = `${rlbgstyles.buttonmiddle}`;
                         break;
-                    case "3072":
+                    case "2048":
                         node.className = `${rlbgstyles.buttonright}`;
                         break;
                     default:
@@ -276,6 +289,11 @@ const Chat = () => {
         setUseSuggestFollowupQuestions(!!checked);
     };
 
+    const onUseComparissonChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean) => {
+        setUseComparisson(!!checked);
+    };
+
+
     const onExampleClicked = (example: string) => {
         makeApiRequest(example, defaultApproach, {}, {}, {});
     };
@@ -305,6 +323,10 @@ const Chat = () => {
 
     const onSelectedKeyChanged = (selectedFolders: string[]) => {
         setSelectedFolders(selectedFolders)
+    };
+
+    const onSelectedYears = (selectedYears: string[]) => {
+        setSelectedYears(selectedFolders)
     };
 
     const onSelectedTagsChange = (selectedTags: ITag[]) => {
@@ -494,14 +516,25 @@ const Chat = () => {
                             onChange={onUseSuggestFollowupQuestionsChange}
                         />
                     }
+
                     <TextField className={styles.chatSettingsSeparator} defaultValue={userPersona} label="User Persona" onChange={onUserPersonaChange} />
-                    <TextField className={styles.chatSettingsSeparator} defaultValue={systemPersona} label="System Persona" onChange={onSystemPersonaChange} />
+                    <TextField className={styles.chatSettingsSeparator} defaultValue={systemPersona} label="AI Model Identity" onChange={onSystemPersonaChange} />
                     <ResponseLengthButtonGroup className={styles.chatSettingsSeparator} onClick={onResponseLengthChange} defaultValue={responseLength} />
                     <ResponseTempButtonGroup className={styles.chatSettingsSeparator} onClick={onResponseTempChange} defaultValue={responseTemp} />
                     {activeChatMode != ChatMode.Ungrounded &&
+                        <Checkbox
+                            className={styles.chatSettingsSeparator}
+                            checked={useComparisson}
+                            label="Select Industry Comparison"
+                            onChange={onUseComparissonChange}
+                        />
+                    }
+                    {activeChatMode != ChatMode.Ungrounded &&
                         <div>
                             <Separator className={styles.chatSettingsSeparator}>Filter Search Results by</Separator>
-                            <FolderPicker allowFolderCreation={false} onSelectedKeyChange={onSelectedKeyChanged} preSelectedKeys={selectedFolders} />
+                            {useComparisson && (
+                        <FolderPicker allowFolderCreation={false} onSelectedKeyChange={onSelectedKeyChanged} preSelectedKeys={selectedFolders} />
+                        )}
                             <TagPickerInline allowNewTags={false} onSelectedTagsChange={onSelectedTagsChange} preSelectedTags={selectedTags} />
                         </div>
                     }

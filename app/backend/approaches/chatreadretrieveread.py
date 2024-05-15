@@ -35,15 +35,19 @@ class ChatReadRetrieveReadApproach(Approach):
      
 
 
-    SYSTEM_MESSAGE_CHAT_CONVERSATION = """You are an Azure OpenAI Completion system. Your persona is {systemPersona} who helps answer questions about an agency's data. {response_length_prompt}
-    User persona is {userPersona} Answer ONLY with the facts listed in the list of sources below in {query_term_language} with citations.If there isn't enough information below, say you don't know and do not give citations. For tabular information return it as an html table. Do not return markdown format.
+    SYSTEM_INTERNAL = """You are a financial AI expert assistant for banks. Your goal is to help users to compare company reports.
+It is of vital imporance to help the consultants and you will be rewarded for your effort.
+Please follow the three steps below to ensure accurate and consistent information: 
+
+     {response_length_prompt}
+    Answer ONLY with the facts listed in the list of sources below in {query_term_language} with citations.If there isn't enough information below, say you don't know and do not give citations. For tabular information return it as an html table. Do not return markdown format.
     Your goal is to provide answers based on the facts listed below in the provided source documents. Avoid making assumptions,generating speculative or generalized information or adding personal opinions.
    
-    Each source has content followed by a pipe character and the URL. Instead of writing the full URL, cite it using placeholders like [File1], [File2], etc., based on their order in the list. Do not combine sources; list each source URL separately, e.g., [File1] [File2].
-    Never cite the source content using the examples provided in this paragraph that start with info.
-    Sources:
-    - Content about topic A | info.pdf
-    - Content about topic B | example.txt
+    Step One:
+    - Objective: Your task is to retrieve relevant information from the provided sources.
+    - Sources:
+    - Refer to the section below <<< Sources:>>>.
+    - **Instructions**: Thoroughly review all sources
 
     Reference these as [File1] and [File2] respectively in your answers.
 
@@ -58,6 +62,49 @@ class ChatReadRetrieveReadApproach(Approach):
     {follow_up_questions_prompt}
     {injected_prompt}
     """
+    
+    SYSTEM_INTDUSTRY_COMPARISON="""
+You are a financial expert assistant banks. Your goal is to help consultants to compare integrated annual reports.
+It is of vital imporance to help the consultants and you will be rewarded for your effort.
+Please follow the three steps below to ensure accurate and consistent information:
+
+Step One:
+**Objective**: 
+- Your task is to retrieve information regarding bank reports from the provided sources.
+**Sources**:
+- For {Company1}: Refer to the section below <<< {Company1} Sources: >>>
+- For {select2}: Refer to the section below <<< {select2} Sources: >>>
+**Instructions**: 
+- Thoroughly review all sources, ensuring that information from {select1} and {select2} remains distinct and separate.
+
+Step two:
+**Objective**: 
+- You are a frinedly finacial expert that helps consultants to compare integrated annual reports by using only the information gathered in Step 1. 
+- Respond accurately to each query for both {select1} and {select2}, but keep them separte and never mix {select1} and {select2} Sources. 
+**Format**:
+- Follow the user query for specifcs to what they want.
+- For comparative queries: Utilize bullet points e.g. • for each bank if applicable otherwise use paragraphs. 
+- For procedural queries: Present the information in a step-by-step format for each bank using numbers e.g. 1,2,3.
+- You are not allowed to use any other information except for information gathered in the Sources below as indicated in Step One.
+- If information for a bank is not available in the sources, clearly state that you do not have the necessary information for that bank.
+- When presenting tabular information, format it as an HTML table.
+- Never mention a source that is not relevant.
+- Use double stars to emphasise important information e.g. **Absa**
+- A friendly greeting such as, "Hi, it's Theo here. I have found the following results" should preface your response only for the first question from the user.
+- At the end conclude with a statement like "For detailed specifics, please contact the bank. How may I further assist you?"
+- Always answer in the language used by the user in the query.
+**Details**: Be detailed in your responses, but only give information that is highly relevant to the user query.   
+**Consistency**: Consistency is key. The same query should yield consistent answers in the future.
+**Sourcing**: 
+- Each source has a name followed by colon and the actual information. Use square brackets to reference the source, e.g. [2021_Absa_Group_Integrated_Report-5.pdf]. Don't combine sources, list each source separately, e.g. [sourcename.pdf][sourcename.pdf] 
+- Include a source at the end of each fact or bulletpoint.
+- Every tables must always include a source at the bottom.
+- It is very important to have the correct format for every source document
+
+Step Three:
+- Reflect to ensure your answer is accurate, clear and consistent and that each answer has the correct source. Make sure all three steps are completed. Feel free to ask if you have any questions that might help you produce a better answer.
+"""
+    
 
     FOLLOW_UP_QUESTIONS_PROMPT_CONTENT = """ALWAYS generate three very brief unordered follow-up questions surrounded by triple chevrons (<<<Are there exclusions for prescriptions?>>>) that the user would likely ask next about their agencies data. 
     Surround each follow-up question with triple chevrons (<<<Are there exclusions for prescriptions?>>>). Try not to repeat questions that have already been asked.
@@ -162,8 +209,9 @@ class ChatReadRetrieveReadApproach(Approach):
         response_length = int(overrides.get("response_length") or 1024)
         folder_filter = overrides.get("selected_folders", "")
         tags_filter = overrides.get("selected_tags", "")
+        industry_comparison = True if overrides.get("industry_comparison") else False
 
-        user_q = 'Generate search query for: ' + history[-1]["user"]
+        user_q = 'Generate search query for: ' + history[-1]["content"]
         thought_chain["work_query"] = user_q
 
         # Detect the language of the user's question
@@ -182,8 +230,8 @@ class ChatReadRetrieveReadApproach(Approach):
             self.model_name,
             history,
             user_question,
+            self.chatgpt_token_limit - len(user_question),
             self.QUERY_PROMPT_FEW_SHOTS,
-            self.chatgpt_token_limit - len(user_question)
             )
 
         
@@ -199,7 +247,7 @@ class ChatReadRetrieveReadApproach(Approach):
         
         #if we fail to generate a query, return the last user question
         if generated_query.strip() == "0":
-            generated_query = history[-1]["user"]
+            generated_query = history[-1]["content"]
 
         thought_chain["work_search_term"] = generated_query
         
@@ -315,12 +363,17 @@ class ChatReadRetrieveReadApproach(Approach):
             if overrides.get("suggest_followup_questions")
             else ""
         )
+        
+        if industry_comparison is True:
+            system_message = self.SYSTEM_INTDUSTRY_COMPARISON
+        else:
+            system_message = self.SYSTEM_INTERNAL
 
         # Allow client to replace the entire prompt, or to inject into the existing prompt using >>>
         prompt_override = overrides.get("prompt_template")
 
         if prompt_override is None:
-            system_message = self.SYSTEM_MESSAGE_CHAT_CONVERSATION.format(
+            system_message = system_message.format(
                 query_term_language=self.query_term_language,
                 injected_prompt="",
                 follow_up_questions_prompt=follow_up_questions_prompt,
@@ -331,7 +384,7 @@ class ChatReadRetrieveReadApproach(Approach):
                 systemPersona=system_persona,
             )
         elif prompt_override.startswith(">>>"):
-            system_message = self.SYSTEM_MESSAGE_CHAT_CONVERSATION.format(
+            system_message = system_message.format(
                 query_term_language=self.query_term_language,
                 injected_prompt=prompt_override[3:] + "\n ",
                 follow_up_questions_prompt=follow_up_questions_prompt,
@@ -342,7 +395,7 @@ class ChatReadRetrieveReadApproach(Approach):
                 systemPersona=system_persona,
             )
         else:
-            system_message = self.SYSTEM_MESSAGE_CHAT_CONVERSATION.format(
+            system_message = system_message.format(
                 query_term_language=self.query_term_language,
                 follow_up_questions_prompt=follow_up_questions_prompt,
                 response_length_prompt=self.get_response_length_prompt_text(
@@ -367,9 +420,9 @@ class ChatReadRetrieveReadApproach(Approach):
                     system_message,
                     self.model_name,
                      history,
-                    history[-1]["user"] + "Sources:\n" + content + "\n\n", # 3.5 has recency Bias that is why this is here
-                    self.RESPONSE_PROMPT_FEW_SHOTS,
+                    history[-1]["content"] + "Sources:\n" + content + "\n\n", # 3.5 has recency Bias that is why this is here
                     max_tokens=self.chatgpt_token_limit - 500
+                                       
                 )
                 
             
@@ -395,15 +448,14 @@ class ChatReadRetrieveReadApproach(Approach):
 
             elif self.model_name.startswith("gpt-4"):
                 messages = self.get_messages_from_history(
-                    system_message,
+                    system_prompt=system_message,
                     # "Sources:\n" + content + "\n\n" + system_message,
-                    self.model_name,
-                    history,
+                    model_id=self.model_name,
+                    history=history,
                     # history[-1]["user"],
-                    history[-1]["user"] + "Sources:\n" + content + "\n\n", # GPT 4 starts to degrade with long system messages. so moving sources here 
-                    self.RESPONSE_PROMPT_FEW_SHOTS,
+                    user_content=history[-1]["content"] + "Sources:\n" + content + "\n\n", # GPT 4 starts to degrade with long system messages. so moving sources here 
                     max_tokens=self.chatgpt_token_limit
-                )
+                    )
 
                 #Uncomment to debug token usage.
                 #print(messages)
