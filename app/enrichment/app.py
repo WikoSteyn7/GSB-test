@@ -51,7 +51,7 @@ ENV = {
     "AZURE_OPENAI_SERVICE_KEY": None,
     "AZURE_OPENAI_ENDPOINT": None,
     "AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME": None,
-    "AZURE_SEARCH_INDEX": None,
+    "AZURE_SEARCH_INDEX": "gsbdev-index1",
     "AZURE_SEARCH_SERVICE_KEY": None,
     "AZURE_SEARCH_SERVICE": None,
     "BLOB_CONNECTION_STRING": None,
@@ -292,6 +292,7 @@ def get_tags(blob_path):
     # blob_client = container_client.get_blob_client(container_client=container_client, blob=blob_path)
     blob_properties = blob_client.get_blob_properties()
     tags = blob_properties.metadata.get("tags")
+    
     if tags != '' and tags is not None:
         if isinstance(tags, str):
             tags_list = [unquote(tag.strip()) for tag in tags.split(",")]
@@ -299,7 +300,31 @@ def get_tags(blob_path):
             tags_list = [unquote(tag.strip()) for tag in tags]
     else:
         tags_list = []
-    return tags_list
+    
+        
+    entity = blob_properties.metadata.get("entity")
+    filename = blob_properties.metadata.get("filename")
+    document_id = blob_properties.metadata.get("document_id")
+    
+    
+    is_public_temp = blob_properties.metadata.get("is_public")
+    if is_public_temp != '' and is_public_temp is not None:
+        
+        if is_public_temp== 'yes' or 'Yes' or 'true' or 'True' or 1:
+            is_public = True
+        else:
+            is_public = False
+    else:
+        is_public = False
+        
+    document_type = blob_properties.metadata.get("document_type")
+    
+    year = blob_properties.metadata.get("year")
+    if year != '' and year is not None:
+        year = int(blob_properties.metadata.get("year"))
+    
+    return tags_list, entity, filename, is_public, document_type, year, document_id 
+
 
 
 def poll_queue() -> None:
@@ -319,7 +344,7 @@ def poll_queue() -> None:
 
     if not messages:
         log.debug("No messages to process. Waiting for a couple of minutes...")
-        time.sleep(120)  # Sleep for 2 minutes
+        time.sleep(30)  # Sleep for 2 minutes
         return
 
     target_embeddings_model = re.sub(r'[^a-zA-Z0-9_\-.]', '_', ENV["TARGET_EMBEDDINGS_MODEL"])
@@ -342,7 +367,7 @@ def poll_queue() -> None:
             index_chunks = []
                                     
             # get tags to apply to the chunk
-            tag_list = get_tags(blob_path)
+            tag_list,entity, filename, is_public, document_type, year,document_id = get_tags(blob_path)
 
             # Iterate over the chunks in the container
             chunk_list = container_client.list_blobs(name_starts_with=chunk_folder_path)
@@ -361,21 +386,21 @@ def poll_queue() -> None:
                 chunk_dict = json.loads(response.text)
 
                 # create the json to be indexed
-                try:
-                    text = (
-                        chunk_dict["translated_title"] + " \n " +
-                        chunk_dict["translated_subtitle"] + " \n " +
-                        chunk_dict["translated_section"] + " \n " +
-                        chunk_dict["translated_content"]
-                    )
-                except KeyError:
-                    text = (
-                        chunk_dict["title"] + " \n " +
-                        chunk_dict["subtitle"] + " \n " +
-                        chunk_dict["section"] + " \n " +
-                        chunk_dict["content"]
-                    )
-
+                # try:
+                #     text = (
+                #         chunk_dict["translated_title"] + " \n " +
+                #         chunk_dict["translated_subtitle"] + " \n " +
+                #         chunk_dict["translated_section"] + " \n " +
+                #         chunk_dict["translated_content"]
+                #     )
+                # except KeyError:
+                text = (
+                    chunk_dict["title"] + " \n " +
+                    chunk_dict["subtitle"] + " \n " +
+                    chunk_dict["section"] + " \n " +
+                    chunk_dict["content"]
+                )
+                
                 try:
                     # try first to read the embedding from the chunk, in case it was already created
                     embedding_data = chunk_dict['contentVector']
@@ -388,18 +413,20 @@ def poll_queue() -> None:
                 index_chunk = {}
                 index_chunk['id'] = statusLog.encode_document_id(chunk.name)
                 index_chunk['processed_datetime'] = f"{chunk_dict['processed_datetime']}+00:00"
-                index_chunk['file_name'] = chunk_dict["file_name"]
+                index_chunk['file_name'] = filename
                 index_chunk['file_uri'] = chunk_dict["file_uri"]
                 index_chunk['folder'] = file_directory[:-1]
                 index_chunk['tags'] = tag_list
                 index_chunk['chunk_file'] = chunk.name
+                index_chunk['entity'] = entity
+                index_chunk['is_public'] = is_public
+                index_chunk['document_type'] = document_type
+                index_chunk['year'] = year
                 index_chunk['file_class'] = chunk_dict["file_class"]
                 index_chunk['title'] = chunk_dict["title"]
                 index_chunk['pages'] = chunk_dict["pages"]
-                index_chunk['translated_title'] = chunk_dict["translated_title"]
                 index_chunk['content'] = text
                 index_chunk['contentVector'] = embedding_data
-                index_chunk['entities'] = chunk_dict["entities"]
                 index_chunk['key_phrases'] = chunk_dict["key_phrases"]
                 index_chunks.append(index_chunk)
 
@@ -422,6 +449,17 @@ def poll_queue() -> None:
             statusLog.upsert_document(blob_path,
                                       'Embeddings process complete',
                                       StatusClassification.INFO, State.COMPLETE)
+            
+            params = {"api_key": "0aNrJDt3Ow9B0sUJ",
+                    "document_id": {document_id},
+                    "document_status_name": "Processed",
+                    }
+
+            body = ""
+            url = "https://divblox-gensafeboard-staging.azurewebsites.net/"
+            response = requests.get(url, headers="", params=params, json=body)
+            print(response)
+            
 
         except Exception as error:
             # Dequeue message and update the embeddings queued count to limit the max retries
@@ -454,6 +492,17 @@ def poll_queue() -> None:
                     StatusClassification.ERROR,
                     State.ERROR,
                 )
+            
+            params = {"api_key": "0aNrJDt3Ow9B0sUJ",
+            "document_id": {document_id},
+            "document_status_name": "Error",
+            }
+
+            body = ""
+            url = "https://divblox-gensafeboard-staging.azurewebsites.net/"
+            response = requests.get(url, headers="", params=params, json=body)
+            print(response)
+            log.debug("response")
 
         statusLog.save_document(blob_path)
 

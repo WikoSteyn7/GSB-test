@@ -14,7 +14,7 @@ from azure.search.documents import SearchClient
 from azure.core.credentials import AzureKeyCredential
 from shared_code.utilities_helper import UtilitiesHelper
 from urllib.parse import unquote
-
+import requests
 
 azure_blob_connection_string = os.environ["BLOB_CONNECTION_STRING"]
 cosmosdb_url = os.environ["COSMOSDB_URL"]
@@ -167,7 +167,22 @@ def main(myblob: func.InputStream):
         backoff =  random.randint(1, max_seconds_hide_on_upload)        
         queue_client.send_message(message_string, visibility_timeout = backoff)  
         statusLog.upsert_document(myblob.name, f'{function_name} - {file_extension} file sent to submit queue. Visible in {backoff} seconds', StatusClassification.DEBUG, State.QUEUED)          
+                # Construct and submmit the message to FR
         
+
+        document_id = metadata.get("document_id")
+        params = {"api_key": "0aNrJDt3Ow9B0sUJ",
+                  "document_id": {document_id},
+                  "document_status_name": "Uploaded",
+                  
+                  }
+
+        body = ""
+        url = "https://divblox-gensafeboard-staging.azurewebsites.net/"
+        response = requests.get(url, headers="", params=params, json=body)
+        print(response)
+        logging.debug(response) 
+      
     except Exception as err:
         statusLog.upsert_document(myblob.name, f"{function_name} - An error occurred - {str(err)}", StatusClassification.ERROR, State.ERROR)
 

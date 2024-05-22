@@ -34,7 +34,7 @@ const Chat = () => {
     const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
     const [retrieveCount, setRetrieveCount] = useState<number>(5);
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
-    const [useComparisson, setUseComparisson] = useState<boolean>(false);
+    const [useComparisson, setUseComparisson] = useState<boolean>(true);
     const [useIncludeOwnCompany, setUseIncludeOwnCompany] = useState<boolean>(false);
     const [userPersona, setUserPersona] = useState<string>("Board Member");
     const [systemPersona, setSystemPersona] = useState<string>("AI Assistant");
@@ -108,11 +108,22 @@ const Chat = () => {
                 { content: a[1].answer, role: "assistant" }
             ]);
             const request: ChatRequest = {
-                legal_entity: legal_entity,
-                user_access_level:user_access_level,
-                messages: [...messages, { content: question, role: "user" }],
-                approach: approach,
-                overrides: {
+                user: {
+                    legal_entity: legal_entity,
+                    user_access_level:user_access_level
+                },
+                query:{
+                    messages: [...messages, { content: question, role: "user" }],
+                    approach: approach,
+                    industryComparison:useComparisson,
+                    selectedYears:["2020", "2021"],
+                    includeOwnCompany:useIncludeOwnCompany,
+                    selectedCompanies: ["Capitec", "Nedbank"],
+                    selectedDocumentType: ["Financial_Statements", "Minutes"]
+                },
+
+                ai_config:  {
+                    aiModel: "gpt-4",
                     promptTemplate: undefined,
                     excludeCategory: undefined,
                     top: retrieveCount,
@@ -121,18 +132,11 @@ const Chat = () => {
                     suggestFollowupQuestions: useSuggestFollowupQuestions,
                     userPersona: userPersona,
                     systemPersona: systemPersona,
-                    aiPersona: "",
+                    aiFocus: "",
                     responseLength: responseLength,
-                    responseTemp: responseTemp,
-                    selectedYears: selectedYears.includes("selectAll") ? "All" : selectedYears.length == 0 ? "All" : selectedYears.join(","),
-                    industryComparison:useComparisson,
-                    includeOwnCompany:useIncludeOwnCompany,
-                    selectedFolders: selectedFolders.includes("selectAll") ? "All" : selectedFolders.length == 0 ? "All" : selectedFolders.join(","),
-                    selectedTags: selectedTags.map(tag => tag.name).join(",")
-                },
-                citation_lookup: approach == Approaches.CompareWebWithWork ? web_citation_lookup : approach == Approaches.CompareWorkWithWeb ? work_citation_lookup : {},
-                thought_chain: thought_chain
-            };
+                    responseTemp: responseTemp     
+                }           
+             };
 
             const temp: ChatResponse = {
                 answer: "",

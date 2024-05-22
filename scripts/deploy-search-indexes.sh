@@ -54,7 +54,7 @@ fi
 
 # Create vector index
 echo "Creating index $index_vector_name ..."
-curl -s -X PUT --header "Content-Type: application/json" --header "api-key: $AZURE_SEARCH_ADMIN_KEY" --data "$index_vector_json" $search_url/indexes/$index_vector_name?api-version=2023-07-01-Preview
+curl -s -X PUT --header "Content-Type: application/json" --header "api-key: $AZURE_SEARCH_ADMIN_KEY" --data "$index_vector_json" $search_url/indexes/$index_vector_name?api-version=2023-11-01 
 
 echo -e "\n"
 echo "Successfully deployed $index_vector_name."

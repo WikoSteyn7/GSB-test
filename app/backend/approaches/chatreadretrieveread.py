@@ -23,7 +23,7 @@ from azure.storage.blob import (
     generate_account_sas,
 )
 from text import nonewlines
-from core.modelhelper import get_token_limit, num_tokens_from_messages
+from core.modelhelper import get_token_limit, num_tokens_from_messages,num_tokens_from_messagesa
 import requests
 import tiktoken
 
@@ -40,7 +40,7 @@ It is of vital imporance to help the consultants and you will be rewarded for yo
 Please follow the three steps below to ensure accurate and consistent information: 
 
      {response_length_prompt}
-    Answer ONLY with the facts listed in the list of sources below in {query_term_language} with citations.If there isn't enough information below, say you don't know and do not give citations. For tabular information return it as an html table. Do not return markdown format.
+    Answer ONLY with the facts listed in the list of sources below with citations.If there isn't enough information below, say you don't know and do not give citations. For tabular information return it as an html table. Do not return markdown format.
     Your goal is to provide answers based on the facts listed below in the provided source documents. Avoid making assumptions,generating speculative or generalized information or adding personal opinions.
    
     Step One:
@@ -53,7 +53,6 @@ Please follow the three steps below to ensure accurate and consistent informatio
 
     Here is how you should answer every question:
     
-    -Look for information in the source documents to answer the question in {query_term_language}.
     -If the source document has an answer, please respond with citation.You must include a citation to each document referenced only once when you find answer in source documents.      
     -If you cannot find answer in below sources, respond with I am not sure.Do not provide personal opinions or assumptions and do not include citations.
     -Identify the language of the user's question and translate the final response to that language.if the final answer is " I am not sure" then also translate it to the language of the user's question and then display translated response only. nothing else.
@@ -72,15 +71,15 @@ Step One:
 **Objective**: 
 - Your task is to retrieve information regarding bank reports from the provided sources.
 **Sources**:
-- For {Company1}: Refer to the section below <<< {Company1} Sources: >>>
-- For {select2}: Refer to the section below <<< {select2} Sources: >>>
+- For {company1}: Refer to the section below <<< {company1} Sources: >>>
+- For {company2}: Refer to the section below <<< {company2} Sources: >>>
 **Instructions**: 
-- Thoroughly review all sources, ensuring that information from {select1} and {select2} remains distinct and separate.
+- Thoroughly review all sources, ensuring that information from {company2} and {company2} remains distinct and separate.
 
 Step two:
 **Objective**: 
 - You are a frinedly finacial expert that helps consultants to compare integrated annual reports by using only the information gathered in Step 1. 
-- Respond accurately to each query for both {select1} and {select2}, but keep them separte and never mix {select1} and {select2} Sources. 
+- Respond accurately to each query for both {company2} and {company2}, but keep them separte and never mix {company2} and {company2} Sources. 
 **Format**:
 - Follow the user query for specifcs to what they want.
 - For comparative queries: Utilize bullet points e.g. • for each bank if applicable otherwise use paragraphs. 
@@ -144,6 +143,7 @@ Step Three:
         content_field: str,
         page_number_field: str,
         chunk_file_field: str,
+        file_name_field: str,
         content_storage_container: str,
         blob_client: BlobServiceClient,
         query_term_language: str,
@@ -163,6 +163,7 @@ Step Three:
         self.source_file_field = source_file_field
         self.content_field = content_field
         self.page_number_field = page_number_field
+        self.file_name_field = file_name_field
         self.chunk_file_field = chunk_file_field
         self.content_storage_container = content_storage_container
         self.blob_client = blob_client
@@ -196,70 +197,75 @@ Step Three:
       
         
     # def run(self, history: list[dict], overrides: dict) -> any:
-    async def run(self, history: Sequence[dict[str, str]], overrides: dict[str, Any], citation_lookup: dict[str, Any], thought_chain: dict[str, Any]) -> Any:
+    async def run(self, query: Sequence[dict[str, Any]], ai_config: dict[str, Any] ) -> Any:
 
         log = logging.getLogger("uvicorn")
         log.setLevel('DEBUG')
         log.propagate = True
-
+        thought_chain={}
         chat_completion = None
-        use_semantic_captions = True if overrides.get("semantic_captions") else False
-        top = overrides.get("top") or 3
-        user_persona = overrides.get("user_persona", "")
-        system_persona = overrides.get("system_persona", "")
-        response_length = int(overrides.get("response_length") or 1024)
-        folder_filter = overrides.get("selected_folders", "")
-        tags_filter = overrides.get("selected_tags", "")
-        industry_comparison = True if overrides.get("industry_comparison") else False
+        use_semantic_captions = True if ai_config.get("semantic_captions") else False
+        top = ai_config.get("top") or 3
+        user_persona = ai_config.get("user_persona", "")
+        system_persona = ai_config.get("system_persona", "")
+        response_length = int(ai_config.get("response_length") or 1024)
+        company_filter = query.get("selected_companies", "")
+        years_filter = query.get("selected_years", "")
+        industry_comparison = True if query.get("industry_comparison") else False
+        document_filter = query.get("selected_document_type", "")
+        minimum_search_score = ai_config.get("minimum_search_score", 0.0)
+        minimum_reranker_score = ai_config.get("minimum_reranker_score", 0.0)
 
-        user_q = 'Generate search query for: ' + history[-1]["content"]
-        thought_chain["work_query"] = user_q
+        history = query.get("messages")
+        original_user_query = history[-1]["content"]
+        user_query_request = 'Generate search query for: ' + history[-1]["content"]
+        thought_chain["work_query"] = user_query_request
 
         # Detect the language of the user's question
-        detectedlanguage = self.detect_language(user_q)
+        # detectedlanguage = self.detect_language(original_user_query)
 
-        if detectedlanguage != self.target_translation_language:
-            user_question = self.translate_response(user_q, self.target_translation_language)
-        else:
-            user_question = user_q
+        # if detectedlanguage != self.target_translation_language:
+        #     user_question = self.translate_response(original_user_query, self.target_translation_language)
+        # else:
+        #     user_question = original_user_query
 
-        query_prompt=self.QUERY_PROMPT_TEMPLATE.format(query_term_language=self.query_term_language)
+        # query_prompt=self.QUERY_PROMPT_TEMPLATE.format(query_term_language=self.query_term_language)
 
         # STEP 1: Generate an optimized keyword search query based on the chat history and the last question
-        messages = self.get_messages_from_history(
-            query_prompt,
-            self.model_name,
-            history,
-            user_question,
-            self.chatgpt_token_limit - len(user_question),
-            self.QUERY_PROMPT_FEW_SHOTS,
-            )
+        # messages = self.get_messages_from_history(
+        #     query_prompt,
+        #     self.model_name,
+        #     history,
+        #     user_question,
+        #     self.chatgpt_token_limit - len(user_question),
+        #     self.QUERY_PROMPT_FEW_SHOTS,
+        #     )
 
-        try:
-            chat_completion= await self.client.chat.completions.create(
-                    model=self.chatgpt_deployment,
-                    messages=messages,
-                    temperature=0.0,
-                    # max_tokens=32, # setting it too low may cause malformed JSON
-                    max_tokens=100,
-                n=1)
+        # try:
+        #     chat_completion= await self.client.chat.completions.create(
+        #             model=self.chatgpt_deployment,
+        #             messages=messages,
+        #             temperature=0.0,
+        #             # max_tokens=32, # setting it too low may cause malformed JSON
+        #             max_tokens=100,
+        #         n=1)
         
-        except Exception as e:
-            log.error(f"Error generating optimized keyword search: {str(e)}")
-            yield json.dumps({"error": f"Error generating optimized keyword search: {str(e)}"}) + "\n"
-            return
+        # except Exception as e:
+        #     log.error(f"Error generating optimized keyword search: {str(e)}")
+        #     yield json.dumps({"error": f"Error generating optimized keyword search: {str(e)}"}) + "\n"
+        #     return
 
-        generated_query = chat_completion.choices[0].message.content
+        # generated_query = chat_completion.choices[0].message.content
         
-        #if we fail to generate a query, return the last user question
-        if generated_query.strip() == "0":
-            generated_query = history[-1]["content"]
+        # #if we fail to generate a query, return the last user question
+        # if generated_query.strip() == "0":
+        #     generated_query = history[-1]["content"]
 
-        thought_chain["work_search_term"] = generated_query
+        # thought_chain["work_search_term"] = generated_query
         
         # Generate embedding using REST API
         url = f'{self.embedding_service_url}/models/{self.escaped_target_model}/embed'
-        data = [f'"{generated_query}"']
+        data = [f'"{original_user_query}"']
         
         headers = {
                 'Accept': 'application/json',  
@@ -285,16 +291,23 @@ Step Three:
         #vector set up for pure vector search & Hybrid search & Hybrid semantic
         vector = RawVectorQuery(vector=embedded_query_vector, k=top, fields="contentVector")
 
+        document_filter = ','.join(document_filter)  
+        company_filter_list = ','.join(company_filter)
+        years_filter = ' or year eq '.join(years_filter)
         #Create a filter for the search query
-        if (folder_filter != "") & (folder_filter != "All"):
-            search_filter = f"search.in(folder, '{folder_filter}', ',')"
+        if (company_filter_list != "") & (company_filter_list != "All"):
+            search_filter = f"search.in(entity, '{company_filter_list}', ',')"
         else:
             search_filter = None
-        if tags_filter != "" :
+            
+        if (document_filter != "") & (document_filter != "All"):
+            search_filter = search_filter + f" and search.in(document_type, '{document_filter}', ',')"
+        
+        if years_filter != "" :
             if search_filter is not None:
-                search_filter = search_filter + f" and tags/any(t: search.in(t, '{tags_filter}', ','))"
+                search_filter = search_filter + f" and (year eq {years_filter})"
             else:
-                search_filter = f"tags/any(t: search.in(t, '{tags_filter}', ','))"
+                search_filter = f"search.in(year, {years_filter} ',')"
 
         # Hybrid Search
         # r = self.search_client.search(generated_query, vector_queries =[vector], top=top)
@@ -307,9 +320,9 @@ Step Three:
         # r=self.search_client.search(search_text=None, vectors=[vector], filter="search.ismatch('upload/ospolicydocs/China, climate change and the energy transition.pdf', 'file_name')", top=top)
 
         #  hybrid semantic search using semantic reranker
-        if (self.use_semantic_reranker and overrides.get("semantic_ranker")):
+        if (self.use_semantic_reranker and ai_config.get("semantic_ranker")):
             r = self.search_client.search(
-                generated_query,
+                original_user_query,
                 query_type=QueryType.SEMANTIC,
                 semantic_configuration_name="default",
                 top=top,
@@ -320,7 +333,7 @@ Step Three:
             )
         else:
             r = self.search_client.search(
-                generated_query, top=top,vector_queries=[vector], filter=search_filter
+                original_user_query, top=top,vector_queries=[vector], filter=search_filter
             )
 
         citation_lookup = {}  # dict of "FileX" moniker to the actual file name
@@ -335,6 +348,37 @@ Step Three:
         # # Only include results where search.score is greater than cutoff_score
         # filtered_results = [doc for doc in r if doc['@search.score'] > cutoff_score]
         # # print("Filtered Results: ", len(filtered_results))
+        
+        # documents = []
+        # async for page in r.by_page():
+        #     async for document in page:
+        #         documents.append(
+        #             Document(
+        #                 id=document.get("id"),
+        #                 content=document.get("content"),
+        #                 embedding=document.get("embedding"),
+        #                 image_embedding=document.get("imageEmbedding"),
+        #                 category=document.get("category"),
+        #                 sourcepage=document.get("sourcepage"),
+        #                 sourcefile=document.get("sourcefile"),
+        #                 oids=document.get("oids"),
+        #                 groups=document.get("groups"),
+        #                 captions=cast(List[QueryCaptionResult], document.get("@search.captions")),
+        #                 score=document.get("@search.score"),
+        #                 reranker_score=document.get("@search.reranker_score"),
+        #             )
+        #         )
+
+        #     qualified_documents = [
+        #         doc
+        #         for doc in documents
+        #         if (
+        #             (doc.score or 0) >= (minimum_search_score or 0)
+        #             and (doc.reranker_score or 0) >= (minimum_reranker_score or 0)
+        #         )
+        #     ]
+
+        # return qualified_documents
 
         for idx, doc in enumerate(r):  # for each document in the search results
             # include the "FileX" moniker in the prompt, and the actual file name in the response
@@ -351,7 +395,7 @@ Step Three:
 
             # add the "FileX" moniker and full file name to the citation lookup
             citation_lookup[f"File{idx}"] = {
-                "citation": urllib.parse.unquote("https://" + doc[self.source_file_field].split("/")[2] + f"/{self.content_storage_container}/" + doc[self.chunk_file_field]),
+                "citation": str(doc[self.file_name_field]),
                 "source_path": self.get_source_file_with_sas(doc[self.source_file_field]),
                 "page_number": str(doc[self.page_number_field][0]) or "0",
              }
@@ -366,7 +410,7 @@ Step Three:
         # STEP 3: Generate the prompt to be sent to the GPT model
         follow_up_questions_prompt = (
             self.FOLLOW_UP_QUESTIONS_PROMPT_CONTENT
-            if overrides.get("suggest_followup_questions")
+            if ai_config.get("suggest_followup_questions")
             else ""
         )
         
@@ -376,10 +420,12 @@ Step Three:
             system_message = self.SYSTEM_INTERNAL
 
         # Allow client to replace the entire prompt, or to inject into the existing prompt using >>>
-        prompt_override = overrides.get("prompt_template")
+        prompt_override = ai_config.get("prompt_template")
 
         if prompt_override is None:
             system_message = system_message.format(
+                company1=company_filter[0],
+                company2= company_filter[1],
                 query_term_language=self.query_term_language,
                 injected_prompt="",
                 follow_up_questions_prompt=follow_up_questions_prompt,
@@ -411,11 +457,13 @@ Step Three:
                 systemPersona=system_persona,
             )
             
-        user_query_tokens = num_tokens_from_messages({"role": "user", "content": user_q}, self.model_name)
+        user_query_tokens = num_tokens_from_messages({"role": "user", "content": original_user_query}, self.model_name)
         sytem_prompt_tokens=num_tokens_from_messages({"role": "user", "content": system_message}, self.model_name)
         content_tokens= num_tokens_from_messages({"role": "user", "content": content}, self.model_name) 
-        history_content = " "            
-        history_tokens= num_tokens_from_messages({"role": "user", "content": history_content}, self.model_name)
+        history_tokens = 0
+        for item in history:
+            history_content = item         
+            history_tokens += num_tokens_from_messagesa(history_content, self.model_name)
 
             
         try:
@@ -446,7 +494,7 @@ Step Three:
                 chat_completion= await self.client.chat.completions.create(
                 model=self.chatgpt_deployment,
                 messages=messages,
-                temperature=float(overrides.get("response_temp")) or 0.6,
+                temperature=float(ai_config.get("response_temp")) or 0.6,
                 n=1,
                 stream=True
                 )
@@ -477,7 +525,7 @@ Step Three:
                 chat_completion= await self.client.chat.completions.create(
                 model=self.chatgpt_deployment,
                 messages=messages,
-                temperature=float(overrides.get("response_temp")) or 0.6,
+                temperature=float(ai_config.get("response_temp")) or 0.6,
                 n=1,
                 stream=True
                 
@@ -498,10 +546,11 @@ Step Three:
             result = []
             initial_data = {
                 "data_points":data_points,
-                "thoughts": f"Searched for:<br>{generated_query}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
+                "thoughts": f"Searched for:<br>{original_user_query}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
                 "thought_chain":thought_chain,
-                "work_citation_lookup":citation_lookup
-            }
+                "work_citation_lookup":citation_lookup,
+                "web_citation_lookup": {}} 
+            
             print(f"{json.dumps(initial_data)}")
             yield json.dumps(initial_data) + "\n"
         

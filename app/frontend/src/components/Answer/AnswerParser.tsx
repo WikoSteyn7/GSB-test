@@ -47,35 +47,14 @@ export function parseAnswerToHtml(answer: string, approach: Approaches, work_cit
 
     if (approach == Approaches.ChatWebRetrieveRead || approach == Approaches.ReadRetrieveRead) {
         // Split the answer into parts, where the odd parts are citations
-        let lastIndex = parsedAnswer.lastIndexOf("\n");
-        if (lastIndex === -1) lastIndex = parsedAnswer.length;
-            parsedAnswer = parsedAnswer.substring(0, lastIndex);
-
-        parsedAnswer = parsedAnswer.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
         const parts = parsedAnswer.split(/\[([^\]]+)\]/g);
         const pattern = /^\w+[0-9]$/;
-        let inTableRow = false;
-        let tableRowContent = "";
         fragments = parts.map((part, index) => {
             if (!pattern.test(part)) {
                 // Even parts are just text
                 return part;
             } else {
                 if (approach == Approaches.ReadRetrieveRead) {
-
-                    // if (part.startsWith("|") && part.endsWith("|")) {
-                    //     inTableRow = true;
-                    //     tableRowContent += part;
-                    //     return "";
-                    // } else if (inTableRow && part === "\n") {
-                    //     inTableRow = false;
-                    //     const row = processTableRow(tableRowContent);
-                    //     tableRowContent = "";
-                    //     return row;
-                    // } else if (inTableRow) {
-                    //     tableRowContent += part;
-                    //     return "";
-                    // }
                     const citation_lookup = work_citation_lookup;
                     // LLM Sometimes refers to citations as "source"
                     part = part.replace(/\w+(\d)$/, 'File$1');
@@ -252,10 +231,4 @@ export function parseAnswerToHtml(answer: string, approach: Approaches, work_cit
         followupQuestions,
         approach
     };
-}
-
-function processTableRow(rowContent: string) {
-    // Convert markdown-like table row syntax to HTML table row
-    const cells = rowContent.split("|").map(cell => `<td>${cell.trim()}</td>`);
-    return `<tr>${cells.join("")}</tr>`;
 }

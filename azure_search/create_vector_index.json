@@ -1,5 +1,5 @@
 {
-  "name": "vector-index",
+  "name": "gsbdev-index1",
   "fields": [
     {
       "name": "id",
@@ -19,9 +19,7 @@
       "indexAnalyzer": null,
       "searchAnalyzer": null,
       "analyzer": "$SEARCH_INDEX_ANALYZER",
-      "normalizer": null,
       "dimensions": null,
-      "vectorSearchConfiguration": null,
       "synonymMaps": []
     },
     {
@@ -36,9 +34,7 @@
       "indexAnalyzer": null,
       "searchAnalyzer": null,
       "analyzer": null,
-      "normalizer": null,
       "dimensions": null,
-      "vectorSearchConfiguration": null,
       "synonymMaps": []
     },
     {
@@ -53,9 +49,7 @@
       "indexAnalyzer": null,
       "searchAnalyzer": null,
       "analyzer": null,
-      "normalizer": null,
       "dimensions": null,
-      "vectorSearchConfiguration": null,
       "synonymMaps": []
     },
     {
@@ -70,9 +64,7 @@
       "indexAnalyzer": null,
       "searchAnalyzer": null,
       "analyzer": null,
-      "normalizer": null,
       "dimensions": null,
-      "vectorSearchConfiguration": null,
       "synonymMaps": []
     },
     {
@@ -87,9 +79,7 @@
       "indexAnalyzer": null,
       "searchAnalyzer": null,
       "analyzer": null,
-      "normalizer": null,
       "dimensions": null,
-      "vectorSearchConfiguration": null,
       "synonymMaps": []
     },
     {
@@ -104,9 +94,7 @@
       "indexAnalyzer": null,
       "searchAnalyzer": null,
       "analyzer": null,
-      "normalizer": null,
       "dimensions": null,
-      "vectorSearchConfiguration": null,
       "synonymMaps": []
     },
     {
@@ -121,11 +109,75 @@
       "indexAnalyzer": null,
       "searchAnalyzer": null,
       "analyzer": null,
-      "normalizer": null,
       "dimensions": null,
-      "vectorSearchConfiguration": null,
       "synonymMaps": []
     },
+
+    {
+      "name": "entity",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": true,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": null,
+      "dimensions": null,
+      "synonymMaps": []
+    },
+
+
+    {
+      "name": "is_public",
+      "type": "Edm.Boolean",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": true,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": null,
+      "dimensions": null,
+      "synonymMaps": []
+    },
+
+    {
+      "name": "document_type",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": true,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": null,
+      "dimensions": null,
+      "synonymMaps": []
+    },
+
+    {
+      "name": "year",
+      "type": "Edm.Int32",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": true,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": null,
+      "dimensions": null,
+      "synonymMaps": []
+    },
+
     {
       "name": "pages",
       "type": "Collection(Edm.Int32)",
@@ -138,9 +190,7 @@
       "indexAnalyzer": null,
       "searchAnalyzer": null,
       "analyzer": null,
-      "normalizer": null,
       "dimensions": null,
-      "vectorSearchConfiguration": null,
       "synonymMaps": []
     },   
     {
@@ -155,28 +205,10 @@
       "indexAnalyzer": null,
       "searchAnalyzer": null,
       "analyzer": "$SEARCH_INDEX_ANALYZER",
-      "normalizer": null,
       "dimensions": null,
-      "vectorSearchConfiguration": null,
       "synonymMaps": []
     },
-    {
-      "name": "translated_title",
-      "type": "Edm.String",
-      "searchable": true,
-      "filterable": false,
-      "retrievable": true,
-      "sortable": false,
-      "facetable": false,
-      "key": false,
-      "indexAnalyzer": null,
-      "searchAnalyzer": null,
-      "analyzer": "$SEARCH_INDEX_ANALYZER",
-      "normalizer": null,
-      "dimensions": null,
-      "vectorSearchConfiguration": null,
-      "synonymMaps": []
-    },
+
     {
       "name": "content",
       "type": "Edm.String",
@@ -189,9 +221,7 @@
       "indexAnalyzer": null,
       "searchAnalyzer": null,
       "analyzer": "$SEARCH_INDEX_ANALYZER",
-      "normalizer": null,
       "dimensions": null,
-      "vectorSearchConfiguration": null,
       "synonymMaps": []
     },
     {
@@ -206,9 +236,7 @@
       "indexAnalyzer": null,
       "searchAnalyzer": null,
       "analyzer": "$SEARCH_INDEX_ANALYZER",
-      "normalizer": null,
       "dimensions": null,
-      "vectorSearchConfiguration": null,
       "synonymMaps": []
     },
     {
@@ -223,9 +251,7 @@
       "indexAnalyzer": null,
       "searchAnalyzer": null,
       "analyzer": "$SEARCH_INDEX_ANALYZER",
-      "normalizer": null,
       "dimensions": null,
-      "vectorSearchConfiguration": null,
       "synonymMaps": []
     },
     {
@@ -233,8 +259,8 @@
       "type": "Collection(Edm.Single)",
       "searchable": true,
       "retrievable": true,
-      "dimensions": $EMBEDDING_VECTOR_SIZE,
-      "vectorSearchConfiguration": "vector-config"
+      "dimensions": 3072,
+      "vectorSearchProfile": "myHnswProfile"
     }
   ],
   "suggesters": [],
@@ -245,9 +271,9 @@
   "charFilters": [],
   "tokenFilters": [],
   "vectorSearch": {
-    "algorithmConfigurations": [
+    "algorithms": [
       {
-        "name": "vector-config",
+        "name": "myHnswConfig",
         "kind": "hnsw",
         "hnswParameters": {
           "m": 4,
@@ -255,6 +281,12 @@
           "efSearch": 500,
           "metric": "cosine"
         }
+      }
+    ],
+    "profiles": [
+      {
+        "name": "myHnswProfile",
+        "algorithm": "myHnswConfig"
       }
     ]
   },
@@ -280,9 +312,6 @@
           "prioritizedKeywordsFields": [
             {
               "fieldName": "key_phrases"
-            },
-            {
-              "fieldName": "entities"
             }
           ]
         }

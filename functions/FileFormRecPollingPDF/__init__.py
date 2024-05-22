@@ -110,7 +110,19 @@ def main(msg: func.QueueMessage) -> None:
                 message_string = json.dumps(message_json)
                 queue_client.send_message(message_string)
                 statusLog.upsert_document(blob_name, f"{function_name} - message sent to enrichment queue", StatusClassification.DEBUG, State.QUEUED) 
+                
+                # document_id = metadata.get("document_id")
+                # params = {"api_key": "0aNrJDt3Ow9B0sUJ",
+                #         "document_id": {document_id},
+                #         "document_status_name": "uploaded",
+                        
+                #         }
 
+                # body = ""
+                # url = "https://divblox-gensafeboard-staging.azurewebsites.net/"
+                # response = requests.get(url, headers="", params=params, json=body)
+                
+                # print(response)
             elif response_status == "running":
                 # still running so requeue with a backoff
                 if queued_count < max_read_attempts:

@@ -26,32 +26,38 @@ export async function chatApi(options: ChatRequest, signal: AbortSignal): Promis
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            legal_entity: options.legal_entity,
-            user_access_level:options.user_access_level,
-            messages: options.messages,
-            approach: options.approach,
-            overrides: {
-                semantic_ranker: options.overrides?.semanticRanker,
-                semantic_captions: options.overrides?.semanticCaptions,
-                top: options.overrides?.top,
-                temperature: options.overrides?.temperature,
-                prompt_template: options.overrides?.promptTemplate,
-                prompt_template_prefix: options.overrides?.promptTemplatePrefix,
-                prompt_template_suffix: options.overrides?.promptTemplateSuffix,
-                exclude_category: options.overrides?.excludeCategory,
-                suggest_followup_questions: options.overrides?.suggestFollowupQuestions,
-                byPassRAG: options.overrides?.byPassRAG,
-                user_persona: options.overrides?.userPersona,
-                system_persona: options.overrides?.systemPersona,
-                ai_persona: options.overrides?.aiPersona,
-                industry_comparison: options.overrides?.industryComparison,
-                response_length: options.overrides?.responseLength,
-                response_temp: options.overrides?.responseTemp,
-                selected_folders: options.overrides?.selectedFolders,
-                selected_tags: options.overrides?.selectedTags
+            user: {
+                legal_entity: options.user?.legal_entity,
+                user_access_level:options.user?.user_access_level
             },
-            citation_lookup: options.citation_lookup,
-            thought_chain: options.thought_chain
+            query:{
+                messages: options.query?.messages,
+                approach: options.query?.approach,
+                industry_comparison: options.query?.industryComparison,
+                selected_years:options.query?.selectedYears,
+                include_own_company:options.query?. includeOwnCompany,
+                selected_companies:options.query?.selectedCompanies,
+                selected_document_type:options.query?.selectedDocumentType
+                
+            },
+
+            ai_config: {
+                ai_model: options.ai_config?.aiModel,
+                semantic_ranker: options.ai_config?.semanticRanker,
+                semantic_captions: options.ai_config?.semanticCaptions,
+                top: options.ai_config?.top,
+                prompt_template: options.ai_config?.promptTemplate,
+                prompt_template_prefix: options.ai_config?.promptTemplatePrefix,
+                prompt_template_suffix: options.ai_config?.promptTemplateSuffix,
+                exclude_category: options.ai_config?.excludeCategory,
+                suggest_followup_questions: options.ai_config?.suggestFollowupQuestions,
+                byPassRAG: options.ai_config?.byPassRAG,
+                user_persona: options.ai_config?.userPersona,
+                system_persona: options.ai_config?.systemPersona,
+                ai_focus: options.ai_config?.aiFocus,
+                response_length: options.ai_config?.responseLength,
+                response_temp: options.ai_config?.responseTemp,
+            }
         }),
         signal: signal
     });

@@ -40,18 +40,13 @@ Terraform will perform the following actions:
         id                                             = "/subscriptions/0e20878e-307f-4ba8-919a-60c5ba5887cd/resourceGroups/gsb-dev/providers/Microsoft.Web/sites/gsb-dev-func"
         name                                           = "gsb-dev-func"
       ~ storage_account_access_key                     = (sensitive value)
-        tags                                           = {}
+        tags                                           = {
+            "BuildNumber" = "local"
+            "ProjectName" = "GenSafeBoard-dev"
+        }
         # (30 unchanged attributes hidden)
 
-      ~ site_config {
-          - application_insights_connection_string  = (sensitive value)
-          - application_insights_key                = (sensitive value)
-            # (23 unchanged attributes hidden)
-
-            # (1 unchanged block hidden)
-        }
-
-        # (2 unchanged blocks hidden)
+        # (3 unchanged blocks hidden)
     }
 
   # module.functions.azurerm_monitor_autoscale_setting.scaleout will be updated in-place

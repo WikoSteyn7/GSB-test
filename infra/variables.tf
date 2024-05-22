@@ -351,7 +351,7 @@ variable "functionLogsContainerName" {
 
 variable "searchIndexName" {
   type    = string
-  default = "vector-index"
+  default = "gsbdev-index1"
 }
 
 variable "chatWarningBannerText" {

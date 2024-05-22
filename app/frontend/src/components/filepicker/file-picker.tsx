@@ -13,9 +13,14 @@ import { getBlobClientUrl, logStatus, StatusLogClassification, StatusLogEntry, S
 interface Props {
   folderPath: string;
   tags: string[];
+  entity:string;
+  filename:string;
+  is_public:string;
+  document_type: string;
+  year: string;
 }
 
-const FilePicker = ({folderPath, tags}: Props) => {
+const FilePicker = ({folderPath, tags,entity,filename,is_public,document_type,year}: Props) => {
   const [files, setFiles] = useState<any>([]);
   const [progress, setProgress] = useState(0);
   const [uploadStarted, setUploadStarted] = useState(false);
@@ -63,7 +68,14 @@ const FilePicker = ({folderPath, tags}: Props) => {
         // set mimetype as determined from browser with file upload control
         const options = {
           blobHTTPHeaders: { blobContentType: file.type },
-          metadata: { tags: tags.map(encodeURIComponent).join(",") }
+          metadata: { tags: tags.map(encodeURIComponent).join(","), 
+                    entity:entity,
+                    filename:filename,
+                    is_public:is_public,
+                    document_type:document_type,
+                    year:year
+
+          }
         };
 
         // upload file
@@ -85,7 +97,7 @@ const FilePicker = ({folderPath, tags}: Props) => {
     } catch (error) {
       console.log(error);
     }
-  }, [files, folderPath, tags]);
+  }, [files, folderPath, tags,entity,filename,is_public,document_type,year]);
 
   // set progress to zero when there are no files
   useEffect(() => {

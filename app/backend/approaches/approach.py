@@ -1,11 +1,68 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 from core.messagebuilder import MessageBuilder
-from typing import Any, Sequence
 import tiktoken
 from enum import Enum
 import logging
+from typing import Any,Sequence, AsyncGenerator, Awaitable, Callable, List, Optional, Union, cast
+# from azure.search.documents.models import (
+#     QueryCaptionResult,
+#     QueryType,
+#     VectorizedQuery,
+#     VectorQuery,
+# )
 
+# class Document:
+#     id: Optional[str]
+#     content: Optional[str]
+#     embedding: Optional[List[float]]
+#     category: Optional[str]
+#     sourcepage: Optional[str]
+#     sourcefile: Optional[str]
+#     oids: Optional[List[str]]
+#     groups: Optional[List[str]]
+#     captions: List[QueryCaptionResult]
+#     score: Optional[float] = None
+#     reranker_score: Optional[float] = None
+
+#     def serialize_for_results(self) -> dict[str, Any]:
+#         return {
+#             "id": self.id,
+#             "content": self.content,
+#             "embedding": Document.trim_embedding(self.embedding),
+#             "category": self.category,
+#             "sourcepage": self.sourcepage,
+#             "sourcefile": self.sourcefile,
+#             "oids": self.oids,
+#             "groups": self.groups,
+#             "captions": (
+#                 [
+#                     {
+#                         "additional_properties": caption.additional_properties,
+#                         "text": caption.text,
+#                         "highlights": caption.highlights,
+#                     }
+#                     for caption in self.captions
+#                 ]
+#                 if self.captions
+#                 else []
+#             ),
+#             "score": self.score,
+#             "reranker_score": self.reranker_score,
+#         }
+
+    # @classmethod
+    # def trim_embedding(cls, embedding: Optional[List[float]]) -> Optional[str]:
+    #     """Returns a trimmed list of floats from the vector embedding."""
+    #     if embedding:
+    #         if len(embedding) > 2:
+    #             # Format the embedding list to show the first 2 items followed by the count of the remaining items."""
+    #             return f"[{embedding[0]}, {embedding[1]} ...+{len(embedding) - 2} more]"
+    #         else:
+    #             return str(embedding)
+
+    #     return None
+    
 #This class must match the Enum in app\frontend\src\api
 class Approaches(Enum):
     RetrieveThenRead = 0

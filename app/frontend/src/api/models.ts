@@ -17,12 +17,12 @@ export const enum Approaches {
     CompareWebWithWork = 6
 }
 
-export type ChatRequestOverrides = {
+export type AIconfig = {
+    aiModel?:string;
     semanticRanker?: boolean;
     semanticCaptions?: boolean;
     excludeCategory?: string;
     top?: number;
-    temperature?: number;
     promptTemplate?: string;
     promptTemplatePrefix?: string;
     promptTemplateSuffix?: string;
@@ -30,14 +30,9 @@ export type ChatRequestOverrides = {
     byPassRAG?: boolean;
     userPersona?: string;
     systemPersona?: string;
-    aiPersona?: string;
+    aiFocus?: string;
     responseLength?: number;
-    responseTemp?: number;
-    selectedYears?: string;
-    industryComparison?: boolean;
-    includeOwnCompany?: boolean;
-    selectedFolders?: string;
-    selectedTags?: string;
+    responseTemp?: number;  
 };
 
 export type ChatResponse = {
@@ -62,14 +57,26 @@ export type Citation = {
     page_number: string; // or number, if page_number is intended to be a numeric value
   }
 
-export type ChatRequest = {
+  export type User = {
     legal_entity: string; 
     user_access_level: string;
-    messages: ResponseMessage[];
+};
+
+export type Query = {
+    messages: ResponseMessage[]; 
     approach: Approaches;
-    overrides?: ChatRequestOverrides;
-    citation_lookup: { [key: string]: { citation: string; source_path: string; page_number: string } };
-    thought_chain: { [key: string]: string };
+    industryComparison?:boolean
+    selectedYears?: string[];
+    includeOwnCompany?: boolean;
+    selectedCompanies?:string[];  
+    selectedDocumentType?:string[];
+};
+
+export type ChatRequest = {
+    user:User;
+    query:Query;
+    ai_config?: AIconfig;
+
 };
 
 export type BlobClientUrlResponse = {

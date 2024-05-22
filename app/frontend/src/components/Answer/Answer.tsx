@@ -15,6 +15,7 @@ import CharacterStreamer from "../CharacterStreamer/CharacterStreamer";
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import rehypeRaw from "rehype-raw";
+import DOMPurify from "dompurify";
 
 interface Props {
     answer: ChatResponse;
@@ -57,6 +58,8 @@ export const Answer = ({
 }: Props) => {
     const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, answer.approach, answer.work_citation_lookup, answer.web_citation_lookup, answer.thought_chain, onCitationClicked), [answer]);
 
+    const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
+    
     return (
         <Stack className={`${answer.approach == Approaches.ReadRetrieveRead ? styles.answerContainerWork : 
                             answer.approach == Approaches.ChatWebRetrieveRead ? styles.answerContainerWeb :

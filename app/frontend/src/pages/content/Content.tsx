@@ -20,6 +20,7 @@ export interface IButtonExampleProps {
 
 const Content = () => {
     const [selectedKey, setSelectedKey] = useState<string | undefined>(undefined);
+    const [selectedEntity, setSelectedEntity] = useState<string | undefined>(undefined);
     const [selectedTags, setSelectedTags] = useState<string[] | undefined>(undefined);
     const [selectedApproach, setSelectedApproach] = useState<number | undefined>(undefined);
 
@@ -39,6 +40,10 @@ const Content = () => {
     const handleLinkClick = (item?: PivotItem) => {
         setSelectedKey(undefined);
     };    
+
+    const onSelectedEntityChanged = (selectedEntity: string[]) => {
+        setSelectedEntity(selectedEntity[0]);
+    };
 
     return (
         <div className={styles.contentArea} >
@@ -85,7 +90,7 @@ const Content = () => {
                         <div className={styles.EmptyObjectivesListItem}>
                             <FolderPicker allowFolderCreation={true} onSelectedKeyChange={onSelectedKeyChanged}/>
                             <TagPickerInline allowNewTags={true} onSelectedTagsChange={onSelectedTagsChanged}/>
-                            <FilePicker folderPath={selectedKey || ""} tags={selectedTags || []}/>
+                            <FilePicker folderPath={selectedKey || ""} tags={selectedTags || []} entity={"Nedbank"} filename={"Nedbank Financial statemnet 2020"} is_public={"True"} document_type={"Financial_Statement"} year={"2020" } />
                         </div>
                     </div>
                 </PivotItem>

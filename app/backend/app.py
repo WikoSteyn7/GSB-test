@@ -61,7 +61,7 @@ ENV = {
     "AZURE_SEARCH_SERVICE": "gptkb",
     "AZURE_SEARCH_SERVICE_ENDPOINT": None,
     "AZURE_SEARCH_SERVICE_KEY": None,
-    "AZURE_SEARCH_INDEX": "gptkbindex",
+    "AZURE_SEARCH_INDEX": "gsbdev-index1",
     "USE_SEMANTIC_RERANKER": "true",
     "AZURE_OPENAI_SERVICE": "myopenai",
     "AZURE_OPENAI_RESOURCE_GROUP": "",
@@ -81,6 +81,7 @@ ENV = {
     "APPLICATION_TITLE": "Information Assistant, built with Azure OpenAI",
     "KB_FIELDS_CONTENT": "content",
     "KB_FIELDS_PAGENUMBER": "pages",
+    "KB_FIELDS_FILENAME": "file_name",
     "KB_FIELDS_SOURCEFILE": "file_uri",
     "KB_FIELDS_CHUNKFILE": "chunk_file",
     "COSMOSDB_URL": None,
@@ -198,6 +199,7 @@ chat_approaches = {
                                     ENV["KB_FIELDS_CONTENT"],
                                     ENV["KB_FIELDS_PAGENUMBER"],
                                     ENV["KB_FIELDS_CHUNKFILE"],
+                                    ENV["KB_FIELDS_FILENAME"],
                                     ENV["AZURE_BLOB_STORAGE_CONTAINER"],
                                     blob_client,
                                     ENV["QUERY_TERM_LANGUAGE"],
@@ -320,16 +322,14 @@ async def chat(request: Request):
     """
     
     json_body = await request.json()
-    approach = json_body.get("approach")
+    query = json_body.get("query", {})
+    approach = query.get("approach")
     try:
         impl = chat_approaches.get(Approaches(int(approach)))
         if not impl:
             return {"error": "unknown approach"}, 400
         
-        if (Approaches(int(approach)) == Approaches.CompareWorkWithWeb or Approaches(int(approach)) == Approaches.CompareWebWithWork):
-            r = impl.run(json_body.get("messages", []), json_body.get("overrides", {}), json_body.get("citation_lookup", {}), json_body.get("thought_chain", {}))
-        else:
-            r = impl.run(json_body.get("messages", []), json_body.get("overrides", {}), {}, json_body.get("thought_chain", {}))
+        r = impl.run(json_body.get("query", {}), json_body.get("ai_config", {}))
        
         return StreamingResponse(r, media_type="application/x-ndjson")
 
