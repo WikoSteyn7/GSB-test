@@ -376,7 +376,7 @@ variable "chatGptDeploymentCapacity" {
 
 variable "chunkTargetSize" {
   type    = string
-  default = "1200"
+  default = "2000"
 }
 
 variable "targetPages" {

@@ -173,12 +173,12 @@ def main(myblob: func.InputStream):
         document_id = metadata.get("document_id")
         params = {"api_key": "0aNrJDt3Ow9B0sUJ",
                   "document_id": {document_id},
-                  "document_status_name": "Uploaded",
+                  "document_status_name": "Processing",
                   
                   }
 
         body = ""
-        url = "https://divblox-gensafeboard-staging.azurewebsites.net/"
+        url =  "https://divblox-gensafeboard-staging.azurewebsites.net/api/update_document_status/updateDocumentStatus"
         response = requests.get(url, headers="", params=params, json=body)
         print(response)
         logging.debug(response) 

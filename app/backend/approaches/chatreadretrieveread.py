@@ -35,73 +35,97 @@ class ChatReadRetrieveReadApproach(Approach):
      
 
 
-    SYSTEM_INTERNAL = """You are a financial AI expert assistant for banks. Your goal is to help users to compare company reports.
-It is of vital imporance to help the consultants and you will be rewarded for your effort.
-Please follow the three steps below to ensure accurate and consistent information: 
-
-     {response_length_prompt}
-    Answer ONLY with the facts listed in the list of sources below with citations.If there isn't enough information below, say you don't know and do not give citations. For tabular information return it as an html table. Do not return markdown format.
-    Your goal is to provide answers based on the facts listed below in the provided source documents. Avoid making assumptions,generating speculative or generalized information or adding personal opinions.
-   
-    Step One:
-    - Objective: Your task is to retrieve relevant information from the provided sources.
-    - Sources:
-    - Refer to the section below <<< Sources:>>>.
-    - **Instructions**: Thoroughly review all sources
-
-    Reference these as [File1] and [File2] respectively in your answers.
-
-    Here is how you should answer every question:
-    
-    -If the source document has an answer, please respond with citation.You must include a citation to each document referenced only once when you find answer in source documents.      
-    -If you cannot find answer in below sources, respond with I am not sure.Do not provide personal opinions or assumptions and do not include citations.
-    -Identify the language of the user's question and translate the final response to that language.if the final answer is " I am not sure" then also translate it to the language of the user's question and then display translated response only. nothing else.
-    -Use HTML to format the response into paragraphs, lists, and tables.
-    -List items should have their own line, do not use - or * to denote a list, use <ul> and <li> tags.
-    {follow_up_questions_prompt}
-    {injected_prompt}
-    """
-    
-    SYSTEM_INTDUSTRY_COMPARISON="""
-You are a financial expert assistant banks. Your goal is to help consultants to compare integrated annual reports.
-It is of vital imporance to help the consultants and you will be rewarded for your effort.
+    SYSTEM_PROPRIETARY_DATA = """
+You are a {prompt_industry} AI expert. Your goal is to help {user_title} to get accurate information from their company documents.
+It is of vital imporance to help the user and you will be rewarded for your effort.
 Please follow the three steps below to ensure accurate and consistent information:
 
 Step One:
-**Objective**: 
-- Your task is to retrieve information regarding bank reports from the provided sources.
-**Sources**:
-- For {company1}: Refer to the section below <<< {company1} Sources: >>>
-- For {company2}: Refer to the section below <<< {company2} Sources: >>>
-**Instructions**: 
-- Thoroughly review all sources, ensuring that information from {company2} and {company2} remains distinct and separate.
+- Objective: Your task is to retrieve relevant information from the provided sources.
+- Sources:
+- Refer to the section below <<< Sources:>>>.
+- **Instructions**: Thoroughly review all sources
+
+Reference these as [File1] and [File2] respectively in your answers.
+
+Here is how you should answer every question:
 
 Step two:
 **Objective**: 
-- You are a frinedly finacial expert that helps consultants to compare integrated annual reports by using only the information gathered in Step 1. 
-- Respond accurately to each query for both {company2} and {company2}, but keep them separte and never mix {company2} and {company2} Sources. 
+-  Answer ONLY with the facts listed in the list of sources below with citations. 
+-  Avoid making assumptions,generating speculative or generalized information or adding personal opinions. 
+
 **Format**:
-- Follow the user query for specifcs to what they want.
-- For comparative queries: Utilize bullet points e.g. • for each bank if applicable otherwise use paragraphs. 
-- For procedural queries: Present the information in a step-by-step format for each bank using numbers e.g. 1,2,3.
+- All answers should be formatted in HTML, this includes  paragraphs, lists, headings  and tables.
+- List items should have their own line, do not use - or * to denote a list, use <ul> and <li> tags.
+- Follow the user query for specifics  to what they want.
+- For comparative queries: Utilize bullet points e.g. • if applicable otherwise use paragraphs. 
+- For procedural queries: Present the information in a step-by-step format using numbers e.g. 1,2,3.
 - You are not allowed to use any other information except for information gathered in the Sources below as indicated in Step One.
-- If information for a bank is not available in the sources, clearly state that you do not have the necessary information for that bank.
+- If information for a query is not available in the sources, clearly state that you do not have the necessary information.
 - When presenting tabular information, format it as an HTML table.
 - Never mention a source that is not relevant.
-- Use double stars to emphasise important information e.g. **Absa**
+- All important information should be bold
 - A friendly greeting such as, "Hi, it's Theo here. I have found the following results" should preface your response only for the first question from the user.
-- At the end conclude with a statement like "For detailed specifics, please contact the bank. How may I further assist you?"
+- At the end conclude with a statement like "For detailed specifics, please contact the company. How may I further assist you?"
 - Always answer in the language used by the user in the query.
 **Details**: Be detailed in your responses, but only give information that is highly relevant to the user query.   
 **Consistency**: Consistency is key. The same query should yield consistent answers in the future.
 **Sourcing**: 
-- Each source has a name followed by colon and the actual information. Use square brackets to reference the source, e.g. [2021_Absa_Group_Integrated_Report-5.pdf]. Don't combine sources, list each source separately, e.g. [sourcename.pdf][sourcename.pdf] 
+- Each source has a "FileX" moniker like this | File1 | :  followed by a colon and the actual information. Always use square brackets in your response to reference the source, e.g. [File1]. Don't combine sources, list each source separately, e.g. [File1][File2] 
 - Include a source at the end of each fact or bulletpoint.
-- Every tables must always include a source at the bottom.
+- Every table must always include a source at the bottom.
 - It is very important to have the correct format for every source document
 
 Step Three:
-- Reflect to ensure your answer is accurate, clear and consistent and that each answer has the correct source. Make sure all three steps are completed. Feel free to ask if you have any questions that might help you produce a better answer.
+- Reflect to ensure your answer is accurate, clear and consistent and that each answer has the correct source. 
+- If there are any numbers in your response, enSure that it is accurate and corresponds with the source data. 
+- Make sure all three steps are completed. Feel free to ask if you have any questions that might help you produce a better answer.
+"""
+    
+    SYSTEM_INTDUSTRY_COMPARISON="""
+You are a {prompt_industry} AI expert. Your goal is to help {user_title} to compare documents from different companies.
+It is of vital imporance to help the user and you will be rewarded for your effort.
+Please follow the three steps below to ensure accurate and consistent information:
+
+Step One:
+**Objective**: 
+- Your task is to retrieve information regarding the companies specified in the Sources below.
+**Sources**:
+{sources_section}
+**Instructions**: 
+- Thoroughly review all sources, ensuring that information from the different companies remains distinct and separate.
+
+Step two:
+**Objective**: 
+- You are a friendly {prompt_industry} expert that helps {user_title} to compare companies by using only the information gathered in Step 1. 
+- Respond accurately to each query for each company, but keep them separate  and never mix different company sources. 
+**Format**:
+- All answers should be formatted in HTML, this includes  paragraphs, lists, headings  and tables.
+ -List items should have their own line, do not use - or * to denote a list, use <ul> and <li> tags.
+- Follow the user query for specifics  to what they want.
+- For comparative queries: Utilize bullet points e.g. • for each company if applicable otherwise use paragraphs. 
+- For procedural queries: Present the information in a step-by-step format for each company using numbers e.g. 1,2,3.
+- You are not allowed to use any other information except for information gathered in the Sources below as indicated in Step One.
+- If information for a company is not available in the sources, clearly state that you do not have the necessary information for that company.
+- When presenting tabular information, format it as an HTML table.
+- Never mention a source that is not relevant.
+- All important information should be bold
+- A friendly greeting such as, "Hi, it's Theo here. I have found the following results" should preface your response only for the first question from the user.
+- At the end conclude with a statement like "For detailed specifics, please contact the company. How may I further assist you?"
+- Always answer in the language used by the user in the query.
+**Details**: Be detailed in your responses, but only give information that is highly relevant to the user query.   
+**Consistency**: Consistency is key. The same query should yield consistent answers in the future.
+**Sourcing**: 
+- Each source has a "FileX" moniker like this | File1 | :  followed by a colon and the actual information. Always use square brackets in your response to reference the source, e.g. [File1]. Don't combine sources, list each source separately, e.g. [File1][File2] 
+- Include a source at the end of each fact or bulletpoint.
+- Every table must always include a source at the bottom.
+- It is very important to have the correct format for every source document
+
+Step Three:
+- Reflect to ensure your answer is accurate, clear and consistent and that each answer has the correct source. 
+- If there are any numbers in your response, enSure that it is accurate and corresponds with the source data. 
+- Make sure all three steps are completed. Feel free to ask if you have any questions that might help you produce a better answer.
 """
     
 
@@ -197,7 +221,7 @@ Step Three:
       
         
     # def run(self, history: list[dict], overrides: dict) -> any:
-    async def run(self, query: Sequence[dict[str, Any]], ai_config: dict[str, Any] ) -> Any:
+    async def run(self, user:dict[str, Any], query: Sequence[dict[str, Any]], ai_config: dict[str, Any] ) -> Any:
 
         log = logging.getLogger("uvicorn")
         log.setLevel('DEBUG')
@@ -215,6 +239,11 @@ Step Three:
         document_filter = query.get("selected_document_type", "")
         minimum_search_score = ai_config.get("minimum_search_score", 0.0)
         minimum_reranker_score = ai_config.get("minimum_reranker_score", 0.0)
+        
+        user_entity = user.get("legal_entity") 
+        user_industry = user.get("industry")
+        user_title = user.get("user_access_level")
+        
 
         history = query.get("messages")
         original_user_query = history[-1]["content"]
@@ -292,23 +321,104 @@ Step Three:
         vector = RawVectorQuery(vector=embedded_query_vector, k=top, fields="contentVector")
 
         document_filter = ','.join(document_filter)  
-        company_filter_list = ','.join(company_filter)
-        years_filter = ' or year eq '.join(years_filter)
-        #Create a filter for the search query
-        if (company_filter_list != "") & (company_filter_list != "All"):
-            search_filter = f"search.in(entity, '{company_filter_list}', ',')"
-        else:
-            search_filter = None
-            
-        if (document_filter != "") & (document_filter != "All"):
-            search_filter = search_filter + f" and search.in(document_type, '{document_filter}', ',')"
         
-        if years_filter != "" :
-            if search_filter is not None:
-                search_filter = search_filter + f" and (year eq {years_filter})"
-            else:
-                search_filter = f"search.in(year, {years_filter} ',')"
+        years_filter = ' or year eq '.join(years_filter)
+        
+        if industry_comparison is False:
+            company_filter_list = user_entity
 
+        #for company in company_filter:
+        #Create a filter for the search query
+            if (company_filter_list != "") & (company_filter_list != "All"):
+                search_filter = f"search.in(entity, '{company_filter_list}', ',')"
+            else:
+                search_filter = None
+                
+            if (document_filter != "") & (document_filter != "All"):
+                search_filter = search_filter + f" and search.in(document_type, '{document_filter}', ',')"
+            
+            if years_filter != "" :
+                if search_filter is not None:
+                    search_filter = search_filter + f" and (year eq {years_filter})"
+                else:
+                    search_filter = f"search.in(year, {years_filter} ',')"
+                    
+            for idx, doc in enumerate(r):  # for each document in the search results
+                # include the "FileX" moniker in the prompt, and the actual file name in the response
+                results.append(
+                    f"| File{idx} " + "| :" + nonewlines(doc[self.content_field])
+                )
+                data_points.append(
+                "/".join(urllib.parse.unquote(doc[self.source_file_field]).split("/")[4:]
+                    ) + "| " + nonewlines(doc[self.content_field])
+                    )
+                # uncomment to debug size of each search result content_field
+                # print(f"File{idx}: ", self.num_tokens_from_string(f"File{idx} " + /
+                #  "| " + nonewlines(doc[self.content_field]), "cl100k_base"))
+
+                # add the "FileX" moniker and full file name to the citation lookup
+                citation_lookup[f"File{idx}"] = {
+                    "citation": str(doc[self.file_name_field]),
+                    "source_path": self.get_source_file_with_sas(doc[self.source_file_field]),
+                    "page_number": str(doc[self.page_number_field][0]) or "0",
+                }
+                
+        
+        else:
+            
+            company_filter_list = ','.join(company_filter)
+            results = []
+            for i,company in company_filter:
+            #Create a filter for the search query
+                    
+                if (document_filter != "") & (document_filter != "All"):
+                    search_filter[i] = search_filter + f" and search.in(document_type, '{document_filter}', ',')"
+                
+                if years_filter != "" :
+                    if search_filter[i] is not None:
+                        search_filter[i] = search_filter + f" and (year eq {years_filter})"
+                    else:
+                        search_filter[i] = f"search.in(year, {years_filter} ',')"
+                
+                
+                if (self.use_semantic_reranker and ai_config.get("semantic_ranker")):
+                    results[i] = self.search_client.search(
+                        original_user_query,
+                        query_type=QueryType.SEMANTIC,
+                        semantic_configuration_name="default",
+                        top=top,
+                        query_caption="extractive|highlight-false"
+                        if use_semantic_captions else None,
+                        vector_queries =[vector],
+                        filter=search_filter[i]
+                    )
+                else:
+                    results[i] = self.search_client.search(
+                        original_user_query, top=top,vector_queries=[vector], filter=search_filter
+                    )
+                    
+                
+                for idx, doc in enumerate(r):  # for each document in the search results
+                    # include the "FileX" moniker in the prompt, and the actual file name in the response
+                    results.append(
+                        f"| File{idx} " + "| :" + nonewlines(doc[self.content_field])
+                    )
+                    data_points.append(
+                    "/".join(urllib.parse.unquote(doc[self.source_file_field]).split("/")[4:]
+                        ) + "| " + nonewlines(doc[self.content_field])
+                        )
+                    # uncomment to debug size of each search result content_field
+                    # print(f"File{idx}: ", self.num_tokens_from_string(f"File{idx} " + /
+                    #  "| " + nonewlines(doc[self.content_field]), "cl100k_base"))
+
+                    # add the "FileX" moniker and full file name to the citation lookup
+                    citation_lookup[f"File{idx}"] = {
+                        "citation": str(doc[self.file_name_field]),
+                        "source_path": self.get_source_file_with_sas(doc[self.source_file_field]),
+                        "page_number": str(doc[self.page_number_field][0]) or "0",
+                    }
+                    
+                
         # Hybrid Search
         # r = self.search_client.search(generated_query, vector_queries =[vector], top=top)
 
@@ -380,25 +490,7 @@ Step Three:
 
         # return qualified_documents
 
-        for idx, doc in enumerate(r):  # for each document in the search results
-            # include the "FileX" moniker in the prompt, and the actual file name in the response
-            results.append(
-                f"File{idx} " + "| " + nonewlines(doc[self.content_field])
-            )
-            data_points.append(
-               "/".join(urllib.parse.unquote(doc[self.source_file_field]).split("/")[4:]
-                ) + "| " + nonewlines(doc[self.content_field])
-                )
-            # uncomment to debug size of each search result content_field
-            # print(f"File{idx}: ", self.num_tokens_from_string(f"File{idx} " + /
-            #  "| " + nonewlines(doc[self.content_field]), "cl100k_base"))
 
-            # add the "FileX" moniker and full file name to the citation lookup
-            citation_lookup[f"File{idx}"] = {
-                "citation": str(doc[self.file_name_field]),
-                "source_path": self.get_source_file_with_sas(doc[self.source_file_field]),
-                "page_number": str(doc[self.page_number_field][0]) or "0",
-             }
             
         # create a single string of all the results to be used in the prompt
         results_text = "".join(results)
@@ -414,48 +506,75 @@ Step Three:
             else ""
         )
         
+        sources_section = ""
         if industry_comparison is True:
             system_message = self.SYSTEM_INTDUSTRY_COMPARISON
+            for company in company_filter:
+                sources_section += f"- For {company}: Refer to the section below <<< {company} Sources: >>>\n"
+
+            system_message = system_message.format(
+                prompt_industry=user_industry,
+                user_title = user_title,
+                sources_section=sources_section,
+                query_term_language=self.query_term_language,
+                injected_prompt="",
+                follow_up_questions_prompt=follow_up_questions_prompt,
+                response_length_prompt=self.get_response_length_prompt_text(response_length),
+                userPersona=user_persona,
+                systemPersona=system_persona,
+            )
         else:
-            system_message = self.SYSTEM_INTERNAL
+            system_message = self.SYSTEM_PROPRIETARY_DATA
+            system_message = system_message.format(
+                prompt_industry=user_industry,
+                user_title = user_title,
+                sources_section=sources_section,
+                query_term_language=self.query_term_language,
+                injected_prompt="",
+                follow_up_questions_prompt=follow_up_questions_prompt,
+                response_length_prompt=self.get_response_length_prompt_text(response_length),
+                userPersona=user_persona,
+                systemPersona=system_persona,
+            )
 
         # Allow client to replace the entire prompt, or to inject into the existing prompt using >>>
         prompt_override = ai_config.get("prompt_template")
 
-        if prompt_override is None:
-            system_message = system_message.format(
-                company1=company_filter[0],
-                company2= company_filter[1],
-                query_term_language=self.query_term_language,
-                injected_prompt="",
-                follow_up_questions_prompt=follow_up_questions_prompt,
-                response_length_prompt=self.get_response_length_prompt_text(
-                    response_length
-                ),
-                userPersona=user_persona,
-                systemPersona=system_persona,
-            )
-        elif prompt_override.startswith(">>>"):
-            system_message = system_message.format(
-                query_term_language=self.query_term_language,
-                injected_prompt=prompt_override[3:] + "\n ",
-                follow_up_questions_prompt=follow_up_questions_prompt,
-                response_length_prompt=self.get_response_length_prompt_text(
-                    response_length
-                ),
-                userPersona=user_persona,
-                systemPersona=system_persona,
-            )
-        else:
-            system_message = system_message.format(
-                query_term_language=self.query_term_language,
-                follow_up_questions_prompt=follow_up_questions_prompt,
-                response_length_prompt=self.get_response_length_prompt_text(
-                    response_length
-                ),
-                userPersona=user_persona,
-                systemPersona=system_persona,
-            )
+        # if prompt_override is None or prompt_override == "default":
+        #     system_message = system_message.format(
+        #         prompt_industry = user_industry,
+        #         company1=company_filter[0],
+        #         company2= company_filter[1],
+        #         query_term_language=self.query_term_language,
+        #         injected_prompt="",
+        #         follow_up_questions_prompt=follow_up_questions_prompt,
+        #         response_length_prompt=self.get_response_length_prompt_text(
+        #             response_length
+        #         ),
+        #         userPersona=user_persona,
+        #         systemPersona=system_persona,
+        #     )
+        # elif prompt_override.startswith(">>>"):
+        #     system_message = system_message.format(
+        #         query_term_language=self.query_term_language,
+        #         injected_prompt=prompt_override[3:] + "\n ",
+        #         follow_up_questions_prompt=follow_up_questions_prompt,
+        #         response_length_prompt=self.get_response_length_prompt_text(
+        #             response_length
+        #         ),
+        #         userPersona=user_persona,
+        #         systemPersona=system_persona,
+        #     )
+        # else:
+        #     system_message = system_message.format(
+        #         query_term_language=self.query_term_language,
+        #         follow_up_questions_prompt=follow_up_questions_prompt,
+        #         response_length_prompt=self.get_response_length_prompt_text(
+        #             response_length
+        #         ),
+        #         userPersona=user_persona,
+        #         systemPersona=system_persona,
+        #     )
             
         user_query_tokens = num_tokens_from_messages({"role": "user", "content": original_user_query}, self.model_name)
         sytem_prompt_tokens=num_tokens_from_messages({"role": "user", "content": system_message}, self.model_name)
@@ -525,6 +644,8 @@ Step Three:
                 chat_completion= await self.client.chat.completions.create(
                 model=self.chatgpt_deployment,
                 messages=messages,
+                seed = 42,
+                max_tokens=response_length,
                 temperature=float(ai_config.get("response_temp")) or 0.6,
                 n=1,
                 stream=True
@@ -543,13 +664,15 @@ Step Three:
         #     translated_response = generated_response
         # thought_chain["work_response"] = urllib.parse.unquote(translated_response)
             msg_to_display = '\n\n'.join([str(message) for message in messages])
+            print(msg_to_display)
             result = []
             initial_data = {
-                "data_points":data_points,
-                "thoughts": f"Searched for:<br>{original_user_query}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
-                "thought_chain":thought_chain,
+                # "data_points":data_points,
+                # "thoughts": f"Searched for:<br>{original_user_query}<br><br>Conversations:<br>" + msg_to_display.replace('\n', '<br>'),
+                # "thought_chain":thought_chain,
                 "work_citation_lookup":citation_lookup,
-                "web_citation_lookup": {}} 
+                # "web_citation_lookup": {}
+                } 
             
             print(f"{json.dumps(initial_data)}")
             yield json.dumps(initial_data) + "\n"

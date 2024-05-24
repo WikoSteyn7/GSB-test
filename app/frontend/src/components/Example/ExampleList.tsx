@@ -12,7 +12,7 @@ export type ExampleModel = {
 
 const EXAMPLES: ExampleModel[] = [
     { text: "What are Capitec's main sources of income?", value: "What are Capitec's main sources of income?" },
-    { text: "Give a breakdown of Capitec's profatibility during 2021.", value: "Give a breakdown of Capitec's profatibility during 2021." },
+    { text: "Give a breakdown of Capitec's profitability during 2021.", value: "Give a breakdown of Capitec's profitability during 2021." },
     { text: "What are some of the current economic challenges?", value: "What are some of the current economic challenges?" }
 ];
 

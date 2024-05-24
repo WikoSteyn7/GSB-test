@@ -19,6 +19,7 @@ export const enum Approaches {
 
 export type AIconfig = {
     aiModel?:string;
+    searchType?:string
     semanticRanker?: boolean;
     semanticCaptions?: boolean;
     excludeCategory?: string;
@@ -60,6 +61,7 @@ export type Citation = {
   export type User = {
     legal_entity: string; 
     user_access_level: string;
+    industry: string;
 };
 
 export type Query = {

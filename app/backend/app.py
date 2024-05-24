@@ -329,7 +329,7 @@ async def chat(request: Request):
         if not impl:
             return {"error": "unknown approach"}, 400
         
-        r = impl.run(json_body.get("query", {}), json_body.get("ai_config", {}))
+        r = impl.run(json_body.get("user", {}), json_body.get("query", {}), json_body.get("ai_config", {}))
        
         return StreamingResponse(r, media_type="application/x-ndjson")
 

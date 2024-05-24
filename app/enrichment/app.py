@@ -456,9 +456,10 @@ def poll_queue() -> None:
                     }
 
             body = ""
-            url = "https://divblox-gensafeboard-staging.azurewebsites.net/"
+            url =  "https://divblox-gensafeboard-staging.azurewebsites.net/api/update_document_status/updateDocumentStatus"
             response = requests.get(url, headers="", params=params, json=body)
             print(response)
+            log.debug(response)
             
 
         except Exception as error:
@@ -499,10 +500,10 @@ def poll_queue() -> None:
             }
 
             body = ""
-            url = "https://divblox-gensafeboard-staging.azurewebsites.net/"
+            url = "https://divblox-gensafeboard-staging.azurewebsites.net/api/update_document_status/updateDocumentStatus"
             response = requests.get(url, headers="", params=params, json=body)
             print(response)
-            log.debug("response")
+            log.debug(response)
 
         statusLog.save_document(blob_path)
 

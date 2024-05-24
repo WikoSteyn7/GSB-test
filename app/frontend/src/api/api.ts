@@ -28,7 +28,8 @@ export async function chatApi(options: ChatRequest, signal: AbortSignal): Promis
         body: JSON.stringify({
             user: {
                 legal_entity: options.user?.legal_entity,
-                user_access_level:options.user?.user_access_level
+                user_access_level:options.user?.user_access_level,
+                industry:options.user?.industry
             },
             query:{
                 messages: options.query?.messages,
@@ -43,6 +44,7 @@ export async function chatApi(options: ChatRequest, signal: AbortSignal): Promis
 
             ai_config: {
                 ai_model: options.ai_config?.aiModel,
+                search_type:options.ai_config?.searchType,
                 semantic_ranker: options.ai_config?.semanticRanker,
                 semantic_captions: options.ai_config?.semanticCaptions,
                 top: options.ai_config?.top,

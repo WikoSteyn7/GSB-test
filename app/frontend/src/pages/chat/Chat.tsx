@@ -49,7 +49,7 @@ const Chat = () => {
     // Setting responseTemp to 0.6 by default, this will effect the default display of the ResponseTempButtonGroup below.
     // It must match a valid value of one of the buttons in the ResponseTempButtonGroup.tsx file.
     // If you update the default value here, you must also update the default value in the onResponseTempChange method.
-    const [responseTemp, setResponseTemp] = useState<number>(0.6);
+    const [responseTemp, setResponseTemp] = useState<number>(0.2);
 
     const [activeChatMode, setChatMode] = useState<ChatMode>(ChatMode.WorkOnly);
     const [defaultApproach, setDefaultApproach] = useState<number>(Approaches.ReadRetrieveRead);
@@ -110,7 +110,9 @@ const Chat = () => {
             const request: ChatRequest = {
                 user: {
                     legal_entity: legal_entity,
-                    user_access_level:user_access_level
+                    user_access_level:user_access_level,
+                    industry: "Insurance"
+
                 },
                 query:{
                     messages: [...messages, { content: question, role: "user" }],
@@ -124,8 +126,11 @@ const Chat = () => {
 
                 ai_config:  {
                     aiModel: "gpt-4",
-                    promptTemplate: undefined,
-                    excludeCategory: undefined,
+                    searchType: "hybrid",
+                    promptTemplate: "default",
+                    promptTemplatePrefix: "default",
+                    promptTemplateSuffix: "default",
+                    excludeCategory: "",
                     top: retrieveCount,
                     semanticRanker: true,
                     semanticCaptions: false,

@@ -447,6 +447,7 @@ class Utilities:
         page_list = []
         chunk_count = 0
         previous_paragraph_element_is_a_table = False
+        chunk_table_target_size = 4096
 
         # iterate over the paragraphs and build a chuck based on a section
         # and/or title of the document
@@ -473,7 +474,7 @@ class Utilities:
                         # table processing & splitting
                         table_chunks = self.chunk_table_with_headers(chunk_text, 
                                                                      paragraph_text, 
-                                                                     chunk_target_size,
+                                                                     chunk_table_target_size,
                                                                      previous_paragraph_element_is_a_table)
                         
                         for i, table_chunk in enumerate(table_chunks):

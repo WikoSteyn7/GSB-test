@@ -10,6 +10,7 @@ from azure.core.credentials import AzureKeyCredential
 from azure.search.documents import SearchClient
 from azure.storage.blob import BlobServiceClient
 from shared_code.status_log import State, StatusClassification, StatusLog
+import requests
 
 blob_connection_string = os.environ["BLOB_CONNECTION_STRING"]
 blob_storage_account_upload_container_name = os.environ[
@@ -155,6 +156,22 @@ def main(mytimer: func.TimerRequest) -> None:
                 doc_base = os.path.basename(blob)
                 doc_path = f"upload/{format(blob)}"            
                 temp_doc_id = status_log.encode_document_id(doc_path)
+                
+                upload_blob_client = blob_service_client.get_blob_client(container="upload", blob=blob_name)
+                
+                properties=upload_blob_client.get_blob_properties()
+                metadata = properties.metadata
+                
+                document_id = metadata.get("document_id")
+                params = {"api_key": "0aNrJDt3Ow9B0sUJ",
+                  "document_id": {document_id},
+                  "document_status_name": "Deleted",
+                  
+                  }
+
+                body = ""
+                url = "https://divblox-gensafeboard-staging.azurewebsites.net/api/update_document_status/updateDocumentStatus"
+                response = requests.get(url, headers="", params=params, json=body)
 
                 logging.info("Modifying status for doc %s \n \t with ID %s", doc_base, temp_doc_id)
 
