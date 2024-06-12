@@ -8,12 +8,14 @@ import logging
 import urllib.parse
 from datetime import datetime, timedelta
 from typing import Any, AsyncGenerator, Coroutine, Sequence
+import asyncio
 
 import openai
 from openai import AzureOpenAI
 from openai import  AsyncAzureOpenAI
 from approaches.approach import Approach
-from azure.search.documents import SearchClient  
+# from azure.search.documents import SearchClient  
+from azure.search.documents.aio import SearchClient
 from azure.search.documents.models import RawVectorQuery
 from azure.search.documents.models import QueryType
 from azure.storage.blob import (
@@ -36,56 +38,51 @@ class ChatReadRetrieveReadApproach(Approach):
 
 
     SYSTEM_PROPRIETARY_DATA = """
-You are a {prompt_industry} AI expert. Your goal is to help {user_title} to get accurate information from their company documents.
-It is of vital imporance to help the user and you will be rewarded for your effort.
+You are a {prompt_industry} AI {system_persona}. Your goal is to help {user_title} to get accurate information from their company documents.
+It is vital to help the user and you will be rewarded for your effort.
 Please follow the three steps below to ensure accurate and consistent information:
 
 Step One:
-- Objective: Your task is to retrieve relevant information from the provided sources.
-- Sources:
-- Refer to the section below <<< Sources:>>>.
-- **Instructions**: Thoroughly review all sources
-
-Reference these as [File1] and [File2] respectively in your answers.
-
-Here is how you should answer every question:
+**Objective**: Your task is to retrieve relevant information from the provided sources.
+**Sources**: Refer to the section below <<<Sources:>>>.
+**Instructions**: Thoroughly review all sources
 
 Step two:
 **Objective**: 
 -  Answer ONLY with the facts listed in the list of sources below with citations. 
--  Avoid making assumptions,generating speculative or generalized information or adding personal opinions. 
+-  Avoid making assumptions, generating speculative or generalized information or adding personal opinions. 
 
 **Format**:
-- All answers should be formatted in HTML, this includes  paragraphs, lists, headings  and tables.
+- All answers should be formatted in HTML, this includes paragraphs, lists, headings and tables.
 - List items should have their own line, do not use - or * to denote a list, use <ul> and <li> tags.
-- Follow the user query for specifics  to what they want.
+- Follow the user query for specifics to what they want.
 - For comparative queries: Utilize bullet points e.g. • if applicable otherwise use paragraphs. 
 - For procedural queries: Present the information in a step-by-step format using numbers e.g. 1,2,3.
 - You are not allowed to use any other information except for information gathered in the Sources below as indicated in Step One.
-- If information for a query is not available in the sources, clearly state that you do not have the necessary information.
+- If information for a query is unavailable in the sources, clearly state that you do not have the necessary information.
 - When presenting tabular information, format it as an HTML table.
 - Never mention a source that is not relevant.
 - All important information should be bold
 - A friendly greeting such as, "Hi, it's Theo here. I have found the following results" should preface your response only for the first question from the user.
 - At the end conclude with a statement like "For detailed specifics, please contact the company. How may I further assist you?"
 - Always answer in the language used by the user in the query.
-**Details**: Be detailed in your responses, but only give information that is highly relevant to the user query.   
+**Details**: Be detailed in your responses, but only give highly relevant information to the user query.   
 **Consistency**: Consistency is key. The same query should yield consistent answers in the future.
 **Sourcing**: 
 - Each source has a "FileX" moniker like this | File1 | :  followed by a colon and the actual information. Always use square brackets in your response to reference the source, e.g. [File1]. Don't combine sources, list each source separately, e.g. [File1][File2] 
-- Include a source at the end of each fact or bulletpoint.
+- Include a source at the end of each fact or bullet point.
 - Every table must always include a source at the bottom.
 - It is very important to have the correct format for every source document
 
 Step Three:
 - Reflect to ensure your answer is accurate, clear and consistent and that each answer has the correct source. 
-- If there are any numbers in your response, enSure that it is accurate and corresponds with the source data. 
+- If there are any numbers in your response, ensure that it is accurate and corresponds with the source data. 
 - Make sure all three steps are completed. Feel free to ask if you have any questions that might help you produce a better answer.
 """
     
     SYSTEM_INTDUSTRY_COMPARISON="""
-You are a {prompt_industry} AI expert. Your goal is to help {user_title} to compare documents from different companies.
-It is of vital imporance to help the user and you will be rewarded for your effort.
+You are a {prompt_industry} AI {system_persona}. Your goal is to help {user_title} to compare documents from different companies.
+It is vital to help the user and you will be rewarded for your effort.
 Please follow the three steps below to ensure accurate and consistent information:
 
 Step One:
@@ -98,16 +95,17 @@ Step One:
 
 Step two:
 **Objective**: 
-- You are a friendly {prompt_industry} expert that helps {user_title} to compare companies by using only the information gathered in Step 1. 
-- Respond accurately to each query for each company, but keep them separate  and never mix different company sources. 
+- Answer ONLY with the facts listed in the list of sources below with citations. 
+- Avoid making assumptions, generating speculative or generalized information or adding personal opinions. 
+- Respond accurately to each query for each company, but keep them separate and never mix different company sources. 
 **Format**:
 - All answers should be formatted in HTML, this includes  paragraphs, lists, headings  and tables.
- -List items should have their own line, do not use - or * to denote a list, use <ul> and <li> tags.
-- Follow the user query for specifics  to what they want.
+- List items should have their own line, do not use - or * to denote a list, use <ul> and <li> tags.
+- Follow the user query for specifics to what they want.
 - For comparative queries: Utilize bullet points e.g. • for each company if applicable otherwise use paragraphs. 
 - For procedural queries: Present the information in a step-by-step format for each company using numbers e.g. 1,2,3.
 - You are not allowed to use any other information except for information gathered in the Sources below as indicated in Step One.
-- If information for a company is not available in the sources, clearly state that you do not have the necessary information for that company.
+- If information for a company is unavailable in the sources, clearly state that you do not have the necessary information for that company.
 - When presenting tabular information, format it as an HTML table.
 - Never mention a source that is not relevant.
 - All important information should be bold
@@ -117,29 +115,31 @@ Step two:
 **Details**: Be detailed in your responses, but only give information that is highly relevant to the user query.   
 **Consistency**: Consistency is key. The same query should yield consistent answers in the future.
 **Sourcing**: 
-- Each source has a "FileX" moniker like this | File1 | :  followed by a colon and the actual information. Always use square brackets in your response to reference the source, e.g. [File1]. Don't combine sources, list each source separately, e.g. [File1][File2] 
+- Each source has a "FileX" moniker like this |File1| :  followed by a colon and the actual information. Always use square brackets in your response to reference the source, e.g. [File1]. Don't combine sources, list each source separately, e.g. [File1][File2] 
 - Include a source at the end of each fact or bulletpoint.
 - Every table must always include a source at the bottom.
 - It is very important to have the correct format for every source document
 
 Step Three:
 - Reflect to ensure your answer is accurate, clear and consistent and that each answer has the correct source. 
-- If there are any numbers in your response, enSure that it is accurate and corresponds with the source data. 
-- Make sure all three steps are completed. Feel free to ask if you have any questions that might help you produce a better answer.
+- If there are any numbers in your response, ensure that it is accurate and correspond with the source data. 
+- Make sure all three steps are completed. Please ask if you have any questions that might help you produce a better answer.
 """
     
 
-    FOLLOW_UP_QUESTIONS_PROMPT_CONTENT = """ALWAYS generate three very brief unordered follow-up questions surrounded by triple chevrons (<<<Are there exclusions for prescriptions?>>>) that the user would likely ask next about their agencies data. 
-    Surround each follow-up question with triple chevrons (<<<Are there exclusions for prescriptions?>>>). Try not to repeat questions that have already been asked.
-    Only generate follow-up questions and do not generate any text before or after the follow-up questions, such as 'Next Questions'
-    """
+    FOLLOW_UP_QUESTIONS_PROMPT_CONTENT = """
+ALWAYS generate three very brief unordered follow-up questions surrounded by triple chevrons (<<<Are there exclusions for prescriptions?>>>) that the user would likely ask next about their agencies data. 
+Surround each follow-up question with triple chevrons (<<<Are there exclusions for prescriptions?>>>). Try not to repeat questions that have already been asked.
+Only generate follow-up questions and do not generate any text before or after the follow-up questions, such as 'Next Questions'
+"""
 
-    QUERY_PROMPT_TEMPLATE = """Below is a history of the conversation so far, and a new question asked by the user that needs to be answered by searching in source documents.
-    Generate a search query based on the conversation and the new question. Treat each search term as an individual keyword. Do not combine terms in quotes or brackets.
-    Do not include cited source filenames and document names e.g info.txt or doc.pdf in the search query terms.
-    Do not include any text inside [] or <<<>>> in the search query terms.
-    Do not include any special characters like '+'.
-    If you cannot generate a search query, return just the number 0.
+    QUERY_PROMPT_TEMPLATE = """
+Below is a history of the conversation so far, and a new question asked by the user that needs to be answered by searching in source documents.
+Generate a search query based on the conversation and the new question. Treat each search term as an individual keyword. Do not combine terms in quotes or brackets.
+Do not include cited source filenames and document names e.g info.txt or doc.pdf in the search query terms.
+Do not include any text inside [] or <<<>>> in the search query terms.
+Do not include any special characters like '+'.
+If you cannot generate a search query, return just the number 0.
     """
 
     QUERY_PROMPT_FEW_SHOTS = [
@@ -323,30 +323,78 @@ Step Three:
         document_filter = ','.join(document_filter)  
         
         years_filter = ' or year eq '.join(years_filter)
+       
+        company_filter_list = company_filter
         
-        if industry_comparison is False:
-            company_filter_list = user_entity
+        results = []
+        search_filter =[]
+        data_points = []
+        citation_lookup = {}
+        
+        
+            # company_filter_list = user_entity
 
         #for company in company_filter:
         #Create a filter for the search query
-            if (company_filter_list != "") & (company_filter_list != "All"):
-                search_filter = f"search.in(entity, '{company_filter_list}', ',')"
-            else:
-                search_filter = None
+        if industry_comparison:
+            tasks = [
+                self.perform_search(company, vector, document_filter, years_filter, self.use_semantic_reranker, ai_config, self.search_client, top, original_user_query)
+                for company in company_filter_list
+            ]
+
+            search_results = await asyncio.gather(*tasks)
+
+            file_counter = 0  # Initialize a counter for file numbers
+
+            for idx, company_results in enumerate(search_results):
+                for doc_idx, doc in enumerate(company_results):
+                    results.append(
+                        " <<<" + nonewlines(doc["entity"]) + " Source:>>>" + f"|File{file_counter}" + "| :" + nonewlines(doc[self.content_field])
+                    )
+                    data_points.append(
+                        "/".join(urllib.parse.unquote(doc[self.source_file_field]).split("/")[4:]) + "| " + nonewlines(doc[self.content_field])
+                    )
+                    citation_lookup[f"File{file_counter}"] = {
+                        "citation": str(doc[self.file_name_field]),
+                        "source_path": self.get_source_file_with_sas(doc[self.source_file_field]),
+                        "page_number": str(doc[self.page_number_field][0]) or "0",
+                    }
+                    file_counter += 1  # Increment the counter for each document
+                
+        
+        else:
+            company_filter_list = user_entity              
+            search_filter = f"search.in(entity, '{company_filter_list}', ',')"
+
                 
             if (document_filter != "") & (document_filter != "All"):
                 search_filter = search_filter + f" and search.in(document_type, '{document_filter}', ',')"
             
             if years_filter != "" :
-                if search_filter is not None:
-                    search_filter = search_filter + f" and (year eq {years_filter})"
-                else:
-                    search_filter = f"search.in(year, {years_filter} ',')"
+                search_filter = search_filter + f" and (year eq {years_filter})"
+               
+            if (self.use_semantic_reranker and ai_config.get("semantic_ranker")):
+                    r = self.search_client.search(
+                        search_text = None,
+                        query_type=QueryType.SEMANTIC,
+                        semantic_configuration_name="default",
+                        top=top,
+                        query_caption="extractive|highlight-false"
+                        if use_semantic_captions else None,
+                        vector_queries =[vector],
+                        filter=search_filter
+                    )
+            else:
+                r = self.search_client.search(
+                    original_user_query, top=top,vector_queries=[vector], filter=search_filter
+                )
+                
+            
                     
             for idx, doc in enumerate(r):  # for each document in the search results
                 # include the "FileX" moniker in the prompt, and the actual file name in the response
                 results.append(
-                    f"| File{idx} " + "| :" + nonewlines(doc[self.content_field])
+                " <<<Source:>>>" + f"|File{idx}" + "| :" + nonewlines(doc[self.content_field])
                 )
                 data_points.append(
                 "/".join(urllib.parse.unquote(doc[self.source_file_field]).split("/")[4:]
@@ -363,135 +411,9 @@ Step Three:
                     "page_number": str(doc[self.page_number_field][0]) or "0",
                 }
                 
-        
-        else:
-            
-            company_filter_list = ','.join(company_filter)
-            results = []
-            for i,company in company_filter:
-            #Create a filter for the search query
                     
-                if (document_filter != "") & (document_filter != "All"):
-                    search_filter[i] = search_filter + f" and search.in(document_type, '{document_filter}', ',')"
-                
-                if years_filter != "" :
-                    if search_filter[i] is not None:
-                        search_filter[i] = search_filter + f" and (year eq {years_filter})"
-                    else:
-                        search_filter[i] = f"search.in(year, {years_filter} ',')"
-                
-                
-                if (self.use_semantic_reranker and ai_config.get("semantic_ranker")):
-                    results[i] = self.search_client.search(
-                        original_user_query,
-                        query_type=QueryType.SEMANTIC,
-                        semantic_configuration_name="default",
-                        top=top,
-                        query_caption="extractive|highlight-false"
-                        if use_semantic_captions else None,
-                        vector_queries =[vector],
-                        filter=search_filter[i]
-                    )
-                else:
-                    results[i] = self.search_client.search(
-                        original_user_query, top=top,vector_queries=[vector], filter=search_filter
-                    )
                     
-                
-                for idx, doc in enumerate(r):  # for each document in the search results
-                    # include the "FileX" moniker in the prompt, and the actual file name in the response
-                    results.append(
-                        f"| File{idx} " + "| :" + nonewlines(doc[self.content_field])
-                    )
-                    data_points.append(
-                    "/".join(urllib.parse.unquote(doc[self.source_file_field]).split("/")[4:]
-                        ) + "| " + nonewlines(doc[self.content_field])
-                        )
-                    # uncomment to debug size of each search result content_field
-                    # print(f"File{idx}: ", self.num_tokens_from_string(f"File{idx} " + /
-                    #  "| " + nonewlines(doc[self.content_field]), "cl100k_base"))
-
-                    # add the "FileX" moniker and full file name to the citation lookup
-                    citation_lookup[f"File{idx}"] = {
-                        "citation": str(doc[self.file_name_field]),
-                        "source_path": self.get_source_file_with_sas(doc[self.source_file_field]),
-                        "page_number": str(doc[self.page_number_field][0]) or "0",
-                    }
-                    
-                
-        # Hybrid Search
-        # r = self.search_client.search(generated_query, vector_queries =[vector], top=top)
-
-        # Pure Vector Search
-        # r=self.search_client.search(search_text=None,vector_queries =[vector], top=top)
-        
-        # vector search with filter
-        # r=self.search_client.search(search_text=None, vectors=[vector], filter="processed_datetime le 2023-09-18T04:06:29.675Z" , top=top)
-        # r=self.search_client.search(search_text=None, vectors=[vector], filter="search.ismatch('upload/ospolicydocs/China, climate change and the energy transition.pdf', 'file_name')", top=top)
-
-        #  hybrid semantic search using semantic reranker
-        if (self.use_semantic_reranker and ai_config.get("semantic_ranker")):
-            r = self.search_client.search(
-                original_user_query,
-                query_type=QueryType.SEMANTIC,
-                semantic_configuration_name="default",
-                top=top,
-                query_caption="extractive|highlight-false"
-                if use_semantic_captions else None,
-                vector_queries =[vector],
-                filter=search_filter
-            )
-        else:
-            r = self.search_client.search(
-                original_user_query, top=top,vector_queries=[vector], filter=search_filter
-            )
-
-        citation_lookup = {}  # dict of "FileX" moniker to the actual file name
-        results = []  # list of results to be used in the prompt
-        data_points = []  # list of data points to be used in the response
-
-        #  #print search results with score
-        # for idx, doc in enumerate(r):  # for each document in the search results
-        #     print(f"File{idx}: ", doc['@search.score'])
-
-        # cutoff_score=0.01
-        # # Only include results where search.score is greater than cutoff_score
-        # filtered_results = [doc for doc in r if doc['@search.score'] > cutoff_score]
-        # # print("Filtered Results: ", len(filtered_results))
-        
-        # documents = []
-        # async for page in r.by_page():
-        #     async for document in page:
-        #         documents.append(
-        #             Document(
-        #                 id=document.get("id"),
-        #                 content=document.get("content"),
-        #                 embedding=document.get("embedding"),
-        #                 image_embedding=document.get("imageEmbedding"),
-        #                 category=document.get("category"),
-        #                 sourcepage=document.get("sourcepage"),
-        #                 sourcefile=document.get("sourcefile"),
-        #                 oids=document.get("oids"),
-        #                 groups=document.get("groups"),
-        #                 captions=cast(List[QueryCaptionResult], document.get("@search.captions")),
-        #                 score=document.get("@search.score"),
-        #                 reranker_score=document.get("@search.reranker_score"),
-        #             )
-        #         )
-
-        #     qualified_documents = [
-        #         doc
-        #         for doc in documents
-        #         if (
-        #             (doc.score or 0) >= (minimum_search_score or 0)
-        #             and (doc.reranker_score or 0) >= (minimum_reranker_score or 0)
-        #         )
-        #     ]
-
-        # return qualified_documents
-
-
-            
+           
         # create a single string of all the results to be used in the prompt
         results_text = "".join(results)
         if results_text == "":
@@ -514,6 +436,7 @@ Step Three:
 
             system_message = system_message.format(
                 prompt_industry=user_industry,
+                system_persona =system_persona,
                 user_title = user_title,
                 sources_section=sources_section,
                 query_term_language=self.query_term_language,
@@ -521,15 +444,13 @@ Step Three:
                 follow_up_questions_prompt=follow_up_questions_prompt,
                 response_length_prompt=self.get_response_length_prompt_text(response_length),
                 userPersona=user_persona,
-                systemPersona=system_persona,
-            )
+                )
         else:
             system_message = self.SYSTEM_PROPRIETARY_DATA
             system_message = system_message.format(
                 prompt_industry=user_industry,
+                system_persona=system_persona,
                 user_title = user_title,
-                sources_section=sources_section,
-                query_term_language=self.query_term_language,
                 injected_prompt="",
                 follow_up_questions_prompt=follow_up_questions_prompt,
                 response_length_prompt=self.get_response_length_prompt_text(response_length),
@@ -626,7 +547,7 @@ Step Three:
                     model_id=self.model_name,
                     history=history,
                     # history[-1]["user"],
-                    user_content=history[-1]["content"] + "Sources:\n" + content + "\n\n", # GPT 4 starts to degrade with long system messages. so moving sources here 
+                    user_content=history[-1]["content"] + content + "\n\n", # GPT 4 starts to degrade with long system messages. so moving sources here 
                     max_tokens=self.chatgpt_token_limit
                     )
 
@@ -646,7 +567,7 @@ Step Three:
                 messages=messages,
                 seed = 42,
                 max_tokens=response_length,
-                temperature=float(ai_config.get("response_temp")) or 0.6,
+                temperature=float(ai_config.get("response_temp")) or 0.2,
                 n=1,
                 stream=True
                 
@@ -685,7 +606,7 @@ Step Three:
                         content = event_chunk.choices[0].delta.content
                         # print (content)
                         result.append(content)
-                        print(f'{{"data": {json.dumps(content)}}}\n\n')
+                        # print(f'{{"data": {json.dumps(content)}}}\n\n')
                         yield json.dumps({"content": content}) + "\n"
             completion_tokens = num_tokens_from_messages({"role": "user", "content":"".join(result)}, "gpt-4")
             token_ussage = {
@@ -693,7 +614,8 @@ Step Three:
                 "sytem_prompt_tokens": sytem_prompt_tokens,
                 "content_tokens": content_tokens,
                 "history_tokens": history_tokens, 
-                "completion_tokens": completion_tokens                   
+                "completion_tokens": completion_tokens,  
+                "model": self.model_name              
             }
             print(f"{json.dumps(token_ussage)}")
             yield json.dumps(token_ussage) + "\n"
@@ -778,3 +700,29 @@ Step Three:
         encoding = tiktoken.get_encoding(encoding_name)
         num_tokens = len(encoding.encode(string))
         return num_tokens
+    
+    async def perform_search(self, company: str, vector: Any, document_filter: str, years_filter: str, use_semantic_reranker: bool, ai_config: dict[str, Any], search_client: Any, top: int, original_user_query: str):
+        search_filter = f"search.in(entity, '{company}', ',')"
+
+        if document_filter != "" and document_filter != "All":
+            search_filter += f" and search.in(document_type, '{document_filter}', ',')"
+
+        if years_filter != "":
+            search_filter += f" and (year eq {years_filter})"
+
+        if use_semantic_reranker and ai_config.get("semantic_ranker"):
+            r = search_client.search(
+                search_text=None,
+                query_type=QueryType.SEMANTIC,
+                semantic_configuration_name="default",
+                top=top,
+                query_caption= None,
+                vector_queries=[vector],
+                filter=search_filter
+            )
+        else:
+            r = search_client.search(
+                original_user_query, top=top, vector_queries=[vector], filter=search_filter
+            )
+
+        return r

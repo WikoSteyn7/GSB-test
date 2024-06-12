@@ -309,8 +309,7 @@ def get_tags(blob_path):
     
     is_public_temp = blob_properties.metadata.get("is_public")
     if is_public_temp != '' and is_public_temp is not None:
-        
-        if is_public_temp== 'yes' or 'Yes' or 'true' or 'True' or 1:
+        if is_public_temp in ['yes', 'Yes', 'true', 'True', '1'] or is_public_temp == '1':
             is_public = True
         else:
             is_public = False

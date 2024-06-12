@@ -146,6 +146,7 @@
       "synonymMaps": []
     },
 
+
     {
       "name": "document_type",
       "type": "Edm.String",
