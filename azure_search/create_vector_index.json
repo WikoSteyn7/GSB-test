@@ -20,6 +20,7 @@
       "searchAnalyzer": null,
       "analyzer": "$SEARCH_INDEX_ANALYZER",
       "dimensions": null,
+      "vectorSearchProfile": null,
       "synonymMaps": []
     },
     {
@@ -35,6 +36,7 @@
       "searchAnalyzer": null,
       "analyzer": null,
       "dimensions": null,
+      "vectorSearchProfile": null,
       "synonymMaps": []
     },
     {
@@ -50,6 +52,7 @@
       "searchAnalyzer": null,
       "analyzer": null,
       "dimensions": null,
+      "vectorSearchProfile": null,
       "synonymMaps": []
     },
     {
@@ -65,6 +68,7 @@
       "searchAnalyzer": null,
       "analyzer": null,
       "dimensions": null,
+      "vectorSearchProfile": null,
       "synonymMaps": []
     },
     {
@@ -80,6 +84,7 @@
       "searchAnalyzer": null,
       "analyzer": null,
       "dimensions": null,
+      "vectorSearchProfile": null,
       "synonymMaps": []
     },
     {
@@ -95,6 +100,7 @@
       "searchAnalyzer": null,
       "analyzer": null,
       "dimensions": null,
+      "vectorSearchProfile": null,
       "synonymMaps": []
     },
     {
@@ -110,6 +116,7 @@
       "searchAnalyzer": null,
       "analyzer": null,
       "dimensions": null,
+      "vectorSearchProfile": null,
       "synonymMaps": []
     },
 
@@ -126,6 +133,7 @@
       "searchAnalyzer": null,
       "analyzer": null,
       "dimensions": null,
+      "vectorSearchProfile": null,
       "synonymMaps": []
     },
 
@@ -143,6 +151,7 @@
       "searchAnalyzer": null,
       "analyzer": null,
       "dimensions": null,
+      "vectorSearchProfile": null,
       "synonymMaps": []
     },
 
@@ -160,6 +169,7 @@
       "searchAnalyzer": null,
       "analyzer": null,
       "dimensions": null,
+      "vectorSearchProfile": null,
       "synonymMaps": []
     },
 
@@ -176,6 +186,7 @@
       "searchAnalyzer": null,
       "analyzer": null,
       "dimensions": null,
+      "vectorSearchProfile": null,
       "synonymMaps": []
     },
 
@@ -192,6 +203,7 @@
       "searchAnalyzer": null,
       "analyzer": null,
       "dimensions": null,
+      "vectorSearchProfile": null,
       "synonymMaps": []
     },   
     {
@@ -207,6 +219,24 @@
       "searchAnalyzer": null,
       "analyzer": "$SEARCH_INDEX_ANALYZER",
       "dimensions": null,
+      "vectorSearchProfile": null,
+      "synonymMaps": []
+    },
+    {
+      "name": "translated_title",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": false,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": "$SEARCH_INDEX_ANALYZER",
+      "normalizer": null,
+      "dimensions": null,
+      "vectorSearchProfile": null,
       "synonymMaps": []
     },
 
@@ -223,6 +253,7 @@
       "searchAnalyzer": null,
       "analyzer": "$SEARCH_INDEX_ANALYZER",
       "dimensions": null,
+      "vectorSearchProfile": null,
       "synonymMaps": []
     },
     {
@@ -238,6 +269,7 @@
       "searchAnalyzer": null,
       "analyzer": "$SEARCH_INDEX_ANALYZER",
       "dimensions": null,
+      "vectorSearchProfile": null,
       "synonymMaps": []
     },
     {
@@ -253,6 +285,7 @@
       "searchAnalyzer": null,
       "analyzer": "$SEARCH_INDEX_ANALYZER",
       "dimensions": null,
+      "vectorSearchProfile": null,
       "synonymMaps": []
     },
     {

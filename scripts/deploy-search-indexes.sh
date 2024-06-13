@@ -31,7 +31,7 @@ export AZURE_SEARCH_ADMIN_KEY=$search_key
 # Fetch existing index definition if it exists
 index_vector_json=$(cat ${DIR}/../azure_search/create_vector_index.json | envsubst | tr -d "\n" | tr -d "\r")
 index_vector_name=$(echo $index_vector_json | jq -r .name )
-existing_index=$(curl -s --header "api-key: $AZURE_SEARCH_ADMIN_KEY" $search_url/indexes/$index_vector_name?2024-05-01-preview)
+existing_index=$(curl -s --header "api-key: $AZURE_SEARCH_ADMIN_KEY" $search_url/indexes/$index_vector_name?api-version=2024-05-01-preview)
 
 if [[ "$existing_index" != *"No index with the name"* ]]; then
     existing_dimensions=$(echo "$existing_index" | jq -r '.fields | map(select(.name == "contentVector")) | .[0].dimensions')
@@ -54,7 +54,7 @@ fi
 
 # Create vector index
 echo "Creating index $index_vector_name ..."
-curl -s -X PUT --header "Content-Type: application/json" --header "api-key: $AZURE_SEARCH_ADMIN_KEY" --data "$index_vector_json" $search_url/indexes/$index_vector_name?2024-05-01-preview
+curl -s -X PUT --header "Content-Type: application/json" --header "api-key: $AZURE_SEARCH_ADMIN_KEY" --data "$index_vector_json" $search_url/indexes/$index_vector_name?api-version=2024-05-01-preview
 
 echo -e "\n"
 echo "Successfully deployed $index_vector_name."

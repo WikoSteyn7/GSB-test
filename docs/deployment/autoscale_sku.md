@@ -9,8 +9,6 @@ You may find better settings to fit your needs. This document explains how this 
 
 The Azure Functions Service Plan Autoscale settings are defined in the file located at `/infra/core/host/functions/functions.tf`. These settings enable automatic scaling of the Azure Functions Service Plan based on CPU usage metrics.
 
-
-
  **File Location:** `/infra/core/host/functions/functions.tf`
 
 #### Scaling Rules
@@ -57,21 +55,17 @@ The App Service Plan Autoscale settings for the enrichment app are defined in th
 
 ### Customization
 
-To customize the App Service Plan Autoscale settings, modify the parameters mentioned above in the specified Terraform file. And Run the `make infrastructure` command.
-
-
+To customize the App Service Plan Autoscale settings, modify the parameters mentioned above in the specified terraform files. And Run the `make infrastructure` command.
 
 # SKU Settings Documentation
 
 ### Overview
 
-The SKU settings for all Service Plans are defined in the file located at `/infra/main.tf`.  The SKU (Stock Keeping Unit) represents the pricing tier or plan for your App Service. It defines the performance, features, and capacity of the App Service. 
+The SKU settings for all Service Plans are defined in the file located at `/infra/variables.tf`.  The SKU (Stock Keeping Unit) represents the pricing tier or plan for your App Service. It defines the performance, features, and capacity of the App Service. 
 More information can be found [here.](https://azure.microsoft.com/en-us/pricing/details/app-service/windows/#purchase-options)
 
 ## Web App Service Plan SKU
 
-
-**File Location:** `/infra/main.tf`
 
 ### SKU Settings
 
@@ -81,8 +75,6 @@ More information can be found [here.](https://azure.microsoft.com/en-us/pricing/
 ## Functions Service Plan SKU
 
 
-**File Location:** `/infra/main.tf`
-
 ### SKU Settings
 
 - **functionsAppSkuSize** `S2`
@@ -90,8 +82,6 @@ More information can be found [here.](https://azure.microsoft.com/en-us/pricing/
 
 ## Enrichment App Service Plan SKU
 
-
-**File Location:** `/infra/main.tf`
 
 ### SKU Settings
 

@@ -54,11 +54,11 @@ enrichment_appName="gsb-prod-enrichmentweb-$old_random_text"
 web_appName="gsb-prod-web-$old_random_text"
 function_appName="gsb-prod-func-$old_random_text"
 
-APP_ID=$(az ad app list --display-name "$enrichment_appName" --query "[?displayName=='$enrichment_appName'].id | [0]" --output tsv)
-az ad app owner add --id $APP_ID --owner-object-id $user_id
+APP_ID=$(az functionapp show --name $function_appName --resource-group $old_resource_group --query "id" --output tsv)
+az role assignment create --assignee "$user_id" --role "Owner" --scope "$APP_ID"
 
-APP_ID=$(az ad app list --display-name "$web_appName" --query "[?displayName=='$web_appName'].id | [0]" --output tsv)
-az ad app owner add --id $APP_ID --owner-object-id $user_id
+APP_ID=$(az webapp show --name $web_appName --resource-group $old_resource_group --query "id" --output tsv)
+az role assignment create --assignee "$user_id" --role "Owner" --scope "$APP_ID"
 
-APP_ID=$(az ad app list --display-name "$function_appName" --query "[?displayName=='$function_appName'].id | [0]" --output tsv)
-az ad app owner add --id $APP_ID --owner-object-id $user_id
+APP_ID=$(az webapp show --name $enrichment_appName --resource-group $old_resource_group --query "id" --output tsv)
+az role assignment create --assignee "$user_id" --role "Owner" --scope "$APP_ID"
