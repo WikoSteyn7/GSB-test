@@ -47,12 +47,12 @@ az role assignment create --assignee $user_id --role "Owner" --scope /subscripti
 # az role assignment create --assignee $user_id --role "Storage Blob Data Reader" --scope /subscriptions/$subscription/resourceGroups/$old_resource_group
 
 #keyvault role assignment
-az keyvault set-policy --name gsb-dev-kv-$old_random_text --object-id $user_id --secret-permissions Get List
+az keyvault set-policy --name gsb-prod-kv-$old_random_text --object-id $user_id --secret-permissions Get List
 
 # # assign access requirements to various apps
-enrichment_appName="gsb-dev-enrichmentweb-$old_random_text"
-web_appName="gsb-dev-web-$old_random_text"
-function_appName="gsb-dev-func-$old_random_text"
+enrichment_appName="gsb-prod-enrichmentweb-$old_random_text"
+web_appName="gsb-prod-web-$old_random_text"
+function_appName="gsb-prod-func-$old_random_text"
 
 APP_ID=$(az ad app list --display-name "$enrichment_appName" --query "[?displayName=='$enrichment_appName'].id | [0]" --output tsv)
 az ad app owner add --id $APP_ID --owner-object-id $user_id

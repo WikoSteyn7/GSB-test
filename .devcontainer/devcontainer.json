@@ -1,5 +1,5 @@
 {
-	"name": "info-asst",
+	"name": "gsb-prod",
 	"build": { 
 		"dockerfile": "Dockerfile",
 		"args": {

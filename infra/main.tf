@@ -1,5 +1,5 @@
 locals {
-  tags            = { ProjectName = "GenSafeBoard-dev", BuildNumber = var.buildNumber }
+  tags            = { ProjectName = "GenSafeBoard-prod", BuildNumber = var.buildNumber }
   azure_roles     = jsondecode(file("${path.module}/azure_roles.json"))
   selected_roles  = ["CognitiveServicesOpenAIUser", "StorageBlobDataReader", "StorageBlobDataContributor", "SearchIndexDataReader", "SearchIndexDataContributor"]
 }
@@ -15,7 +15,7 @@ resource "random_string" "random" {
 
 // Organize resources in a resource group
 resource "azurerm_resource_group" "rg" {
-  name     = var.resourceGroupName != "" ? var.resourceGroupName : "gsb-dev"
+  name     = var.resourceGroupName != "" ? var.resourceGroupName : "gsb-prod"
   location = var.location
   tags     = local.tags
 }
@@ -36,8 +36,8 @@ module "entraObjects" {
 module "logging" {
   source = "./core/logging/loganalytics"
 
-  logAnalyticsName        = var.logAnalyticsName != "" ? var.logAnalyticsName : "gsb-dev-la"
-  applicationInsightsName = var.applicationInsightsName != "" ? var.applicationInsightsName : "gsb-dev-appins"
+  logAnalyticsName        = var.logAnalyticsName != "" ? var.logAnalyticsName : "gsb-prod-la"
+  applicationInsightsName = var.applicationInsightsName != "" ? var.applicationInsightsName : "gsb-prod-appins"
   location                = var.location
   tags                    = local.tags
   skuName                 = "PerGB2018"
@@ -46,7 +46,7 @@ module "logging" {
 
 module "storage" {
   source                = "./core/storage"
-  name                  = var.storageAccountName != "" ? var.storageAccountName : "gsbdevstre1"
+  name                  = var.storageAccountName != "" ? var.storageAccountName : "gsbprodstre1"
   location              = var.location
   tags                  = local.tags
   accessTier            = "Hot"
@@ -66,8 +66,8 @@ module "storage" {
 
 module "enrichmentApp" {
   source                                    = "./core/host/enrichmentapp"
-  name                                      = var.enrichmentServiceName != "" ? var.enrichmentServiceName : "gsb-dev-enrichmentweb"
-  plan_name                                 = var.enrichmentAppServicePlanName != "" ? var.enrichmentAppServicePlanName : "gsb-dev-enrichmentasp"
+  name                                      = var.enrichmentServiceName != "" ? var.enrichmentServiceName : "gsb-prod-enrichmentweb"
+  plan_name                                 = var.enrichmentAppServicePlanName != "" ? var.enrichmentAppServicePlanName : "gsb-prod-enrichmentasp"
   location                                  = var.location 
   tags                                      = local.tags
   sku = {
@@ -117,8 +117,8 @@ module "enrichmentApp" {
 # // The application frontend
 module "backend" {
   source                              = "./core/host/webapp"
-  name                                = var.backendServiceName != "" ? var.backendServiceName : "gsb-dev-web"
-  plan_name                           = var.appServicePlanName != "" ? var.appServicePlanName : "gsb-dev-asp"
+  name                                = var.backendServiceName != "" ? var.backendServiceName : "gsb-prod-web"
+  plan_name                           = var.appServicePlanName != "" ? var.appServicePlanName : "gsb-prod-asp"
   sku = {
     tier                              = var.appServiceSkuTier
     size                              = var.appServiceSkuSize
@@ -190,7 +190,7 @@ module "backend" {
 
 module "openaiServices" {
   source = "./core/ai/openaiservices"
-  name     = var.openAIServiceName != "" ? var.openAIServiceName : "gsb-dev-aoai-${random_string.random.result}"
+  name     = var.openAIServiceName != "" ? var.openAIServiceName : "gsb-prod-aoai-${random_string.random.result}"
   location = "eastus2"
   tags     = local.tags
   resourceGroupName = azurerm_resource_group.rg.name
@@ -230,10 +230,10 @@ module "openaiServices" {
 module "formrecognizer" {
   source = "./core/ai/docintelligence"
 
-  name     = "gsb-dev-docintel"
+  name     = "gsb-prod-docintel"
   location = var.location
   tags     = local.tags
-  customSubDomainName = "gsb-dev-docintel-${random_string.random.result}"
+  customSubDomainName = "gsb-prod-docintel-${random_string.random.result}"
   resourceGroupName = azurerm_resource_group.rg.name
   keyVaultId = module.kvModule.keyVaultId 
   depends_on = [
@@ -244,7 +244,7 @@ module "formrecognizer" {
 module "cognitiveServices" {
   source = "./core/ai/cogServices"
 
-  name     = "gsb-dev-enrichment-cog-${random_string.random.result}"
+  name     = "gsb-prod-enrichment-cog-${random_string.random.result}"
   location = var.location 
   tags     = local.tags
   keyVaultId = module.kvModule.keyVaultId 
@@ -257,7 +257,7 @@ module "cognitiveServices" {
 module "searchServices" {
   source = "./core/search"
 
-  name     = var.searchServicesName != "" ? var.searchServicesName : "gsb-dev-search"
+  name     = var.searchServicesName != "" ? var.searchServicesName : "gsb-prod-search"
   location = var.location
   tags     = local.tags
   # aad_auth_failure_mode = "http401WithBearerChallenge"
@@ -275,7 +275,7 @@ module "searchServices" {
 module "cosmosdb" {
   source = "./core/db"
 
-  name                = "gsb-dev-cosmos"
+  name                = "gsb-prod-cosmos"
   location            = var.location
   tags                = local.tags
   logDatabaseName   = "statusdb"
@@ -293,12 +293,12 @@ module "cosmosdb" {
 module "functions" { 
   source = "./core/host/functions"
 
-  name                                  = var.functionsAppName != "" ? var.functionsAppName : "gsb-dev-func"
+  name                                  = var.functionsAppName != "" ? var.functionsAppName : "gsb-prod-func"
   location                              = var.location
   tags                                  = local.tags
   keyVaultUri                           = module.kvModule.keyVaultUri
   keyVaultName                          = module.kvModule.keyVaultName 
-  plan_name                             = var.appServicePlanName != "" ? var.appServicePlanName : "gsb-dev-func-asp"
+  plan_name                             = var.appServicePlanName != "" ? var.appServicePlanName : "gsb-prod-func-asp"
   sku                                   = {
     size                                = var.functionsAppSkuSize
     tier                                = var.functionsAppSkuTier
@@ -478,14 +478,14 @@ module "azMonitor" {
   source            = "./core/logging/monitor"
   logAnalyticsName  = module.logging.logAnalyticsName
   location          = var.location
-  logWorkbookName   = "gsb-dev-log"
+  logWorkbookName   = "gsb-prod-log"
   resourceGroupName = azurerm_resource_group.rg.name 
   componentResource = "/subscriptions/${var.subscriptionId}/resourceGroups/${azurerm_resource_group.rg.name}/providers/Microsoft.OperationalInsights/workspaces/${module.logging.logAnalyticsName}"
 }
 
 module "kvModule" {
   source            = "./core/security/keyvault" 
-  name              = "gsb-dev-kv"
+  name              = "gsb-prod-kv"
   location          = var.location
   kvAccessObjectId  = data.azurerm_client_config.current.object_id 
   spClientSecret    = module.entraObjects.azure_ad_mgmt_app_secret 
@@ -497,7 +497,7 @@ module "kvModule" {
 
 module "bingSearch" {
   source                        = "./core/ai/bingSearch"
-  name                          = "gsb-dev-bing-${random_string.random.result}"
+  name                          = "gsb-prod-bing-${random_string.random.result}"
   resourceGroupName             = azurerm_resource_group.rg.name
   tags                          = local.tags
   sku                           = "S1" //supported SKUs can be found at https://www.microsoft.com/en-us/bing/apis/pricing

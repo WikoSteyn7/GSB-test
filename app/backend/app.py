@@ -61,7 +61,7 @@ ENV = {
     "AZURE_SEARCH_SERVICE": "gptkb",
     "AZURE_SEARCH_SERVICE_ENDPOINT": None,
     "AZURE_SEARCH_SERVICE_KEY": None,
-    "AZURE_SEARCH_INDEX": "gsbdev-index1",
+    "AZURE_SEARCH_INDEX": "gsbprod-index1",
     "USE_SEMANTIC_RERANKER": "true",
     "AZURE_OPENAI_SERVICE": "myopenai",
     "AZURE_OPENAI_RESOURCE_GROUP": "",

@@ -44,7 +44,7 @@ cognitive_services_account_location = os.environ["ENRICHMENT_LOCATION"]
 
 # Search Service
 AZURE_SEARCH_SERVICE_ENDPOINT = os.environ.get("AZURE_SEARCH_SERVICE_ENDPOINT")
-AZURE_SEARCH_INDEX = os.environ.get("AZURE_SEARCH_INDEX") or "gsbdev-index1"
+AZURE_SEARCH_INDEX = os.environ.get("AZURE_SEARCH_INDEX") or "gsbprod-index1"
 SEARCH_CREDS = AzureKeyCredential(os.environ.get("AZURE_SEARCH_SERVICE_KEY"))
 
 # Translation params for OCR'd text

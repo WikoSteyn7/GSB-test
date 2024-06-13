@@ -86,9 +86,9 @@ elif [[ "${WORKSPACE}" =~ [[:upper:]] ]]; then
 fi
 
 # Set the name of the resource group
-export TF_VAR_resource_group_name="gsb-dev-$WORKSPACE"
+export TF_VAR_resource_group_name="gsb-prod-$WORKSPACE"
 
 # The default key that is used in the remote state
-export TF_BACKEND_STATE_KEY="shared.gsb-dev.tfstate"
+export TF_BACKEND_STATE_KEY="shared.gsb-prod.tfstate"
 
 echo -e "\n\e[32m🎯 Target Resource Group: \e[33m$TF_VAR_resource_group_name\e[0m\n"

@@ -13,7 +13,7 @@ resource "azurerm_key_vault" "kv" {
 }
 
  
-resource "azurerm_key_vault_access_policy" "gsb-dev" {
+resource "azurerm_key_vault_access_policy" "gsb-prod" {
   depends_on  = [
     azurerm_key_vault.kv
   ]
@@ -34,7 +34,7 @@ resource "azurerm_key_vault_access_policy" "gsb-dev" {
 
 resource "azurerm_key_vault_secret" "spClientKeySecret" {
   depends_on  = [
-    azurerm_key_vault_access_policy.gsb-dev,
+    azurerm_key_vault_access_policy.gsb-prod,
     azurerm_key_vault.kv
   ]
   name         = "AZURE-CLIENT-SECRET"

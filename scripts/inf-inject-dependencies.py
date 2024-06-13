@@ -27,7 +27,7 @@ with open(config_file_path, 'r') as file:
     
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
-workspace = rg_name.replace("gsb-dev", "")
+workspace = rg_name.replace("gsb-prod", "")
 state_file_path = f"../infra/terraform.tfstate.d/{workspace}/terraform.tfstate"
 state_file_path = os.path.abspath(os.path.join(script_dir, state_file_path))
 
