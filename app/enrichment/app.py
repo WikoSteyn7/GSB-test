@@ -305,6 +305,8 @@ def get_tags(blob_path):
     entity = blob_properties.metadata.get("entity")
     filename = blob_properties.metadata.get("filename")
     document_id = blob_properties.metadata.get("document_id")
+    industry = blob_properties.metadata.get("industry")
+    country = blob_properties.metadata.get("country")
     
     
     is_public_temp = blob_properties.metadata.get("is_public")
@@ -322,7 +324,9 @@ def get_tags(blob_path):
     if year != '' and year is not None:
         year = int(blob_properties.metadata.get("year"))
     
-    return tags_list, entity, filename, is_public, document_type, year, document_id 
+    
+        
+    return tags_list, entity, filename, is_public, document_type, year, document_id, industry, country
 
 
 
@@ -366,7 +370,7 @@ def poll_queue() -> None:
             index_chunks = []
                                     
             # get tags to apply to the chunk
-            tag_list,entity, filename, is_public, document_type, year,document_id = get_tags(blob_path)
+            tag_list,entity, filename, is_public, document_type, year,document_id, industry, country = get_tags(blob_path)
 
             # Iterate over the chunks in the container
             chunk_list = container_client.list_blobs(name_starts_with=chunk_folder_path)
@@ -418,6 +422,8 @@ def poll_queue() -> None:
                 index_chunk['tags'] = tag_list
                 index_chunk['chunk_file'] = chunk.name
                 index_chunk['entity'] = entity
+                index_chunk['industry'] = industry
+                index_chunk['country'] = country
                 index_chunk['is_public'] = is_public
                 index_chunk['document_type'] = document_type
                 index_chunk['year'] = year

@@ -137,6 +137,40 @@
       "synonymMaps": []
     },
 
+    {
+      "name": "industry",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": true,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": null,
+      "dimensions": null,
+      "vectorSearchProfile": null,
+      "synonymMaps": []
+    },
+
+    {
+      "name": "country",
+      "type": "Edm.String",
+      "searchable": false,
+      "filterable": true,
+      "retrievable": true,
+      "sortable": false,
+      "facetable": true,
+      "key": false,
+      "indexAnalyzer": null,
+      "searchAnalyzer": null,
+      "analyzer": null,
+      "dimensions": null,
+      "vectorSearchProfile": null,
+      "synonymMaps": []
+    },
+
 
     {
       "name": "is_public",
